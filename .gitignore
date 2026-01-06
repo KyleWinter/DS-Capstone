@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Data & cache
+data/cache/
+data/kb.sqlite
+
+# OS
+.DS_Store
