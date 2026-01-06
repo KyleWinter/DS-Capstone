@@ -66,6 +66,12 @@ track3-kb/
     ├── demo.md                  # 演示脚本：输入什么、看到什么
     └── dataset.md               # 数据描述：notes 来源、规模、统计
 
+python ./scripts/demo_cli.py search "解题"
+python ./scripts/verify_db.py
+
 
 pip install -U pytest
+pytest -q
+
 pip install -U openai
+python scripts/build_embeddings.py --batch 64

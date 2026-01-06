@@ -61,3 +61,28 @@ CREATE TABLE IF NOT EXISTS embeddings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_embeddings_model ON embeddings(model);
+
+
+-- -------------------------
+-- Clusters
+-- -------------------------
+CREATE TABLE IF NOT EXISTS clusters (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  method     TEXT NOT NULL,              -- e.g. "kmeans"
+  k          INTEGER,
+  name       TEXT,
+  summary    TEXT,
+  size       INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS cluster_members (
+  cluster_id INTEGER NOT NULL,
+  chunk_id   INTEGER NOT NULL,
+  PRIMARY KEY (cluster_id, chunk_id),
+  FOREIGN KEY(cluster_id) REFERENCES clusters(id) ON DELETE CASCADE,
+  FOREIGN KEY(chunk_id) REFERENCES chunks(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_cluster_members_chunk ON cluster_members(chunk_id);
+CREATE INDEX IF NOT EXISTS idx_cluster_members_cluster ON cluster_members(cluster_id);

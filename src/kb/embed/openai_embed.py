@@ -1,5 +1,5 @@
 # pip install -U openai
-
+# python scripts/build_embeddings.py --batch 64
 
 from __future__ import annotations
 
