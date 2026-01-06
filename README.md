@@ -75,3 +75,7 @@ pytest -q
 
 pip install -U openai
 python scripts/build_embeddings.py --batch 64
+
+To start：
+pip install uvicorn fastapi
+uvicorn src.kb.api.app:app --reload --port 8000

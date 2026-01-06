@@ -1,0 +1,225 @@
+# src/kb/api/routes.py
+from __future__ import annotations
+
+from typing import Literal, Optional, List
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+import sqlite3
+
+from src.kb.config import DB_PATH
+from src.kb.store.db import get_conn
+
+from src.kb.search.lexical import fts_search, get_chunk_by_id
+from src.kb.suggest.recommender import (
+    related_by_cluster,
+    related_by_embedding,
+    suggest_clusters_from_chunk_hits,
+)
+
+from .schemas import (
+    ChunkHitOut,
+    ChunkOut,
+    RelatedItemOut,
+    ClusterSuggestionOut,
+    ClusterListItemOut,
+    ClusterMetaOut,
+    ClusterDetailOut,
+)
+
+router = APIRouter()
+
+
+def get_db() -> sqlite3.Connection:
+    # 每次请求拿一个连接（SQLite 够用，且简单）
+    conn = get_conn(DB_PATH)
+    return conn
+
+
+@router.get("/health")
+def health() -> dict:
+    return {"ok": True}
+
+
+@router.get("/search", response_model=list[ChunkHitOut])
+def api_search(
+    q: str = Query(..., min_length=1, description="FTS query string"),
+    limit: int = Query(10, ge=1, le=100),
+    conn: sqlite3.Connection = Depends(get_db),
+) -> list[ChunkHitOut]:
+    hits = fts_search(conn, q, limit=limit)
+    return [
+        ChunkHitOut(
+            chunk_id=h.chunk_id,
+            file_path=h.file_path,
+            heading=getattr(h, "heading", "") or "",
+            preview=(h.preview or "").replace("\n", " "),
+        )
+        for h in hits
+    ]
+
+
+@router.get("/chunks/{chunk_id}", response_model=ChunkOut)
+def api_chunk(
+    chunk_id: int,
+    conn: sqlite3.Connection = Depends(get_db),
+) -> ChunkOut:
+    row = get_chunk_by_id(conn, chunk_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Chunk not found: {chunk_id}")
+    return ChunkOut(
+        id=int(row["id"]),
+        file_path=str(row["file_path"]),
+        heading=str(row["heading"] or ""),
+        ordinal=int(row["ordinal"]),
+        content=str(row["content"] or ""),
+    )
+
+
+@router.get("/chunks/{chunk_id}/related", response_model=list[RelatedItemOut])
+def api_related(
+    chunk_id: int,
+    mode: Literal["cluster", "embed"] = Query("cluster"),
+    k: int = Query(10, ge=1, le=100),
+    conn: sqlite3.Connection = Depends(get_db),
+) -> list[RelatedItemOut]:
+    # validate chunk exists
+    row = get_chunk_by_id(conn, chunk_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Chunk not found: {chunk_id}")
+
+    if mode == "cluster":
+        items = related_by_cluster(conn, chunk_id, k=k)
+        return [
+            RelatedItemOut(
+                chunk_id=it.chunk_id,
+                file_path=it.file_path,
+                heading=it.heading or "",
+                preview=(it.preview or "").replace("\n", " "),
+                score=None,
+            )
+            for it in items
+        ]
+
+    items = related_by_embedding(conn, chunk_id, k=k)
+    return [
+        RelatedItemOut(
+            chunk_id=it.chunk_id,
+            file_path=it.file_path,
+            heading=it.heading or "",
+            preview=(it.preview or "").replace("\n", " "),
+            score=float(it.score),
+        )
+        for it in items
+    ]
+
+
+@router.get("/clusters/suggest", response_model=list[ClusterSuggestionOut])
+def api_suggest_clusters(
+    q: str = Query(..., min_length=1),
+    limit: int = Query(5, ge=1, le=50),
+    fts_k: int = Query(50, ge=1, le=500),
+    conn: sqlite3.Connection = Depends(get_db),
+) -> list[ClusterSuggestionOut]:
+    hits = fts_search(conn, q, limit=fts_k)
+    if not hits:
+        return []
+
+    chunk_ids = [h.chunk_id for h in hits]
+    clusters = suggest_clusters_from_chunk_hits(conn, chunk_ids, k=limit)
+    return [
+        ClusterSuggestionOut(
+            cluster_id=c.cluster_id,
+            name=c.name or "",
+            score=float(c.score),
+        )
+        for c in clusters
+    ]
+
+
+@router.get("/clusters", response_model=list[ClusterListItemOut])
+def api_list_clusters(
+    limit: int = Query(10, ge=1, le=200),
+    conn: sqlite3.Connection = Depends(get_db),
+) -> list[ClusterListItemOut]:
+    ok = conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='clusters'"
+    ).fetchone()
+    if not ok:
+        # 用 200 + 提示信息更友好，但这里保持纯 JSON
+        return []
+
+    rows = conn.execute(
+        """
+        SELECT id, COALESCE(name,'') AS name, COALESCE(size,0) AS size, method, k
+        FROM clusters
+        ORDER BY size DESC, id ASC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+
+    return [
+        ClusterListItemOut(
+            id=int(r["id"]),
+            name=str(r["name"] or ""),
+            size=int(r["size"] or 0),
+            method=str(r["method"] or ""),
+            k=int(r["k"] or 0),
+        )
+        for r in rows
+    ]
+
+
+@router.get("/clusters/{cluster_id}", response_model=ClusterDetailOut)
+def api_cluster_detail(
+    cluster_id: int,
+    limit: int = Query(50, ge=1, le=500),
+    conn: sqlite3.Connection = Depends(get_db),
+) -> ClusterDetailOut:
+    meta = conn.execute(
+        """
+        SELECT id,
+               COALESCE(name,'') AS name,
+               COALESCE(summary,'') AS summary,
+               COALESCE(size,0) AS size
+        FROM clusters WHERE id=?
+        """,
+        (cluster_id,),
+    ).fetchone()
+    if not meta:
+        raise HTTPException(status_code=404, detail=f"Cluster not found: {cluster_id}")
+
+    rows = conn.execute(
+        """
+        SELECT c.id AS chunk_id, c.file_path, COALESCE(c.heading,'') AS heading, c.content
+        FROM cluster_members m
+        JOIN chunks c ON c.id = m.chunk_id
+        WHERE m.cluster_id=?
+        ORDER BY c.id
+        LIMIT ?
+        """,
+        (cluster_id, limit),
+    ).fetchall()
+
+    members: List[ChunkHitOut] = []
+    for r in rows:
+        content = str(r["content"] or "").replace("\n", " ").strip()
+        preview = content[:240] + ("…" if len(content) > 240 else "")
+        members.append(
+            ChunkHitOut(
+                chunk_id=int(r["chunk_id"]),
+                file_path=str(r["file_path"]),
+                heading=str(r["heading"] or ""),
+                preview=preview,
+            )
+        )
+
+    return ClusterDetailOut(
+        meta=ClusterMetaOut(
+            id=int(meta["id"]),
+            name=str(meta["name"] or ""),
+            summary=str(meta["summary"] or ""),
+            size=int(meta["size"] or 0),
+        ),
+        members=members,
+    )

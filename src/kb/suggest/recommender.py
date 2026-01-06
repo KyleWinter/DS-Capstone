@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import math
 import sqlite3
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Dict
+from pathlib import Path
 from collections import Counter
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -22,7 +22,7 @@ class SuggestItem:
 class ClusterSuggestion:
     cluster_id: int
     name: str
-    score: float   # e.g., vote ratio or aggregated score
+    score: float   # normalized vote ratio
 
 
 def _preview(text: str, n: int = 180) -> str:
@@ -58,13 +58,11 @@ def _fetch_embedding(conn: sqlite3.Connection, chunk_id: int) -> Optional[np.nda
 
 def _fetch_all_embeddings(conn: sqlite3.Connection) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Returns (chunk_ids, matrix) where:
+    Returns (chunk_ids, matrix):
       chunk_ids: (N,) int64
       matrix: (N, D) float32
     """
-    rows = conn.execute(
-        "SELECT chunk_id, vec, dims FROM embeddings"
-    ).fetchall()
+    rows = conn.execute("SELECT chunk_id, vec, dims FROM embeddings").fetchall()
     if not rows:
         return np.array([], dtype=np.int64), np.zeros((0, 0), dtype=np.float32)
 
@@ -82,24 +80,13 @@ def _fetch_all_embeddings(conn: sqlite3.Connection) -> Tuple[np.ndarray, np.ndar
     return ids, mat
 
 
-def _cosine_sim(a: np.ndarray, b: np.ndarray) -> float:
-    na = float(np.linalg.norm(a))
-    nb = float(np.linalg.norm(b))
-    if na == 0.0 or nb == 0.0:
-        return 0.0
-    return float(np.dot(a, b) / (na * nb))
-
-
 def related_by_cluster(conn: sqlite3.Connection, chunk_id: int, k: int = 10) -> List[SuggestItem]:
     """
-    Recommend other chunks in the same cluster.
+    Recommend other chunks in the same cluster as `chunk_id`.
+    Requires `cluster_members` and `clusters` to exist (build_clusters.py).
     """
     row = conn.execute(
-        """
-        SELECT cluster_id
-        FROM cluster_members
-        WHERE chunk_id=?
-        """,
+        "SELECT cluster_id FROM cluster_members WHERE chunk_id=?",
         (chunk_id,),
     ).fetchone()
     if not row:
@@ -126,7 +113,7 @@ def related_by_cluster(conn: sqlite3.Connection, chunk_id: int, k: int = 10) -> 
                 file_path=str(r["file_path"]),
                 heading=str(r["heading"]),
                 preview=_preview(str(r["content"])),
-                score=1.0,  # same cluster => uniform score
+                score=1.0,
             )
         )
     return out
@@ -135,7 +122,7 @@ def related_by_cluster(conn: sqlite3.Connection, chunk_id: int, k: int = 10) -> 
 def related_by_embedding(conn: sqlite3.Connection, chunk_id: int, k: int = 10) -> List[SuggestItem]:
     """
     Recommend by nearest neighbors in embedding space (cosine similarity).
-    This is effectively 'graph neighbors' without persisting a graph.
+    Uses brute-force cosine similarity over all embeddings (fine for ~10k scale demo).
     """
     q = _fetch_embedding(conn, chunk_id)
     if q is None:
@@ -150,11 +137,11 @@ def related_by_embedding(conn: sqlite3.Connection, chunk_id: int, k: int = 10) -
     mn = mat / (np.linalg.norm(mat, axis=1, keepdims=True) + 1e-12)
 
     sims = mn @ qn  # (N,)
+
     # exclude self
-    for i, cid in enumerate(ids):
-        if int(cid) == int(chunk_id):
-            sims[i] = -1.0
-            break
+    self_idx = np.where(ids == int(chunk_id))[0]
+    if self_idx.size > 0:
+        sims[int(self_idx[0])] = -1.0
 
     top_idx = np.argsort(-sims)[:k]
 
@@ -177,37 +164,42 @@ def related_by_embedding(conn: sqlite3.Connection, chunk_id: int, k: int = 10) -
     return out
 
 
-def suggest_clusters_from_chunk_hits(
+def suggest_clusters_from_weighted_hits(
     conn: sqlite3.Connection,
-    chunk_ids: List[int],
+    weighted_chunk_ids: List[Tuple[int, float]],
     k: int = 5,
 ) -> List[ClusterSuggestion]:
     """
-    Given a set of chunk hits (e.g., from search), suggest the most relevant clusters.
-    Score = vote share among hits.
+    Given evidence chunks (chunk_id, weight), vote for clusters.
+    Requires: cluster_members, clusters.
+
+    score is normalized: cluster_weight / total_weight.
     """
-    if not chunk_ids:
+    if not weighted_chunk_ids:
         return []
+
+    chunk_ids = [cid for cid, _ in weighted_chunk_ids]
+    weight_map = {int(cid): float(w) for cid, w in weighted_chunk_ids}
 
     qmarks = ",".join(["?"] * len(chunk_ids))
     rows = conn.execute(
-        f"""
-        SELECT m.cluster_id
-        FROM cluster_members m
-        WHERE m.chunk_id IN ({qmarks})
-        """,
+        f"SELECT chunk_id, cluster_id FROM cluster_members WHERE chunk_id IN ({qmarks})",
         chunk_ids,
     ).fetchall()
-
     if not rows:
         return []
 
-    ctr = Counter(int(r["cluster_id"]) for r in rows)
-    total = sum(ctr.values()) or 1
+    score_by_cluster: Dict[int, float] = {}
+    for r in rows:
+        cid = int(r["chunk_id"])
+        cl = int(r["cluster_id"])
+        score_by_cluster[cl] = score_by_cluster.get(cl, 0.0) + weight_map.get(cid, 1.0)
 
-    top = ctr.most_common(k)
+    total = sum(score_by_cluster.values()) or 1.0
+    top = sorted(score_by_cluster.items(), key=lambda x: x[1], reverse=True)[:k]
+
     out: List[ClusterSuggestion] = []
-    for cluster_id, votes in top:
+    for cluster_id, sc in top:
         c = conn.execute(
             "SELECT id, COALESCE(name,'') AS name FROM clusters WHERE id=?",
             (cluster_id,),
@@ -218,7 +210,19 @@ def suggest_clusters_from_chunk_hits(
             ClusterSuggestion(
                 cluster_id=int(c["id"]),
                 name=str(c["name"]),
-                score=votes / total,
+                score=float(sc / total),
             )
         )
     return out
+
+
+def suggest_clusters_from_chunk_hits(
+    conn: sqlite3.Connection,
+    chunk_ids: List[int],
+    k: int = 5,
+) -> List[ClusterSuggestion]:
+    """
+    Convenience wrapper: unweighted voting.
+    """
+    weighted = [(int(cid), 1.0) for cid in chunk_ids]
+    return suggest_clusters_from_weighted_hits(conn, weighted, k=k)
