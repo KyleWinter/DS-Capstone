@@ -4,7 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update ingest" />
+    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update cli">
+      <change afterPath="$PROJECT_DIR$/tests/conftest.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_db_schema.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_embeddings_storage.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_hybrid_rerank_mocked.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_ingest_chunker.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_repo_fts.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/kb.sqlite" beforeDir="false" afterPath="$PROJECT_DIR$/data/kb.sqlite" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/build_embeddings.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/build_embeddings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/embed/openai_embed.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/embed/openai_embed.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/store/schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/store/schema.sql" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -148,7 +161,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767683741294</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="update cli">
+      <option name="closed" value="true" />
+      <created>1767683824404</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1767683824404</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -156,6 +177,7 @@
     <MESSAGE value="update notes" />
     <MESSAGE value="update db" />
     <MESSAGE value="update ingest" />
-    <option name="LAST_COMMIT_MESSAGE" value="update ingest" />
+    <MESSAGE value="update cli" />
+    <option name="LAST_COMMIT_MESSAGE" value="update cli" />
   </component>
 </project>

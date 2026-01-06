@@ -65,3 +65,7 @@ track3-kb/
     ├── architecture.md          # 报告用：架构说明
     ├── demo.md                  # 演示脚本：输入什么、看到什么
     └── dataset.md               # 数据描述：notes 来源、规模、统计
+
+
+pip install -U pytest
+pip install -U openai

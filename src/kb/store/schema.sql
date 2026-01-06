@@ -68,3 +68,17 @@ CREATE TRIGGER IF NOT EXISTS chunks_au AFTER UPDATE ON chunks BEGIN
   INSERT INTO chunks_fts(rowid, content, heading, file_path)
   VALUES (new.id, new.content, COALESCE(new.heading, ''), new.file_path);
 END;
+
+-- -------------------------
+-- Embeddings (store vectors for chunks)
+-- -------------------------
+CREATE TABLE IF NOT EXISTS embeddings (
+  chunk_id    INTEGER PRIMARY KEY,
+  model       TEXT NOT NULL,
+  dims        INTEGER NOT NULL,
+  vec         BLOB NOT NULL,  -- float32 packed bytes
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY(chunk_id) REFERENCES chunks(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_embeddings_model ON embeddings(model);
