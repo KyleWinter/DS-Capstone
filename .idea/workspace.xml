@@ -4,17 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update schema.sql">
-      <change afterPath="$PROJECT_DIR$/src/kb/cluster/io.py" afterDir="false" />
+    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update cluster">
+      <change afterPath="$PROJECT_DIR$/scripts/stats.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data/kb.sqlite" beforeDir="false" afterPath="$PROJECT_DIR$/data/kb.sqlite" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/build_clusters.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/build_clusters.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/kb.sqlite-shm" beforeDir="false" afterPath="$PROJECT_DIR$/data/kb.sqlite-shm" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/demo_cli.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/demo_cli.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/cluster/clusterer.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/cluster/clusterer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/kb/cluster/labeler.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/cluster/labeler.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/embed/openai_embed.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/embed/openai_embed.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/store/schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/store/schema.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/suggest/recommender.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/suggest/recommender.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -56,6 +53,7 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python.build_clusters.executor": "Run",
     "Python.demo_cli.executor": "Run",
+    "Python.stats.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -72,7 +70,7 @@
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.build_clusters">
+  <component name="RunManager" selected="Python.demo_cli">
     <configuration name="build_clusters" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="track3-kb" />
       <option name="ENV_FILES" value="" />
@@ -117,10 +115,33 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="stats" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="track3-kb" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/scripts" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/stats.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.build_clusters" />
         <item itemvalue="Python.demo_cli" />
+        <item itemvalue="Python.stats" />
+        <item itemvalue="Python.build_clusters" />
       </list>
     </recent_temporary>
   </component>
@@ -211,7 +232,23 @@
       <option name="project" value="LOCAL" />
       <updated>1767686677887</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="update cluster">
+      <option name="closed" value="true" />
+      <created>1767688499237</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1767688499237</updated>
+    </task>
+    <task id="LOCAL-00011" summary="update cluster">
+      <option name="closed" value="true" />
+      <created>1767688521744</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1767688521744</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -222,6 +259,7 @@
     <MESSAGE value="update cli" />
     <MESSAGE value="update openai key usage and tests" />
     <MESSAGE value="update schema.sql" />
-    <option name="LAST_COMMIT_MESSAGE" value="update schema.sql" />
+    <MESSAGE value="update cluster" />
+    <option name="LAST_COMMIT_MESSAGE" value="update cluster" />
   </component>
 </project>
