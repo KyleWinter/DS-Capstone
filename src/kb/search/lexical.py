@@ -4,6 +4,8 @@ import sqlite3
 from dataclasses import dataclass
 from typing import List
 
+from .text_utils import tokenize_for_fts
+
 
 @dataclass(frozen=True)
 class LexicalHit:
@@ -20,10 +22,14 @@ def fts_search(conn: sqlite3.Connection, query: str, limit: int = 10) -> List[Le
     Notes:
     - Uses snippet() for readable highlights.
     - If you want ranking, you can later use bm25(chunks_fts) ordering.
+    - Automatically tokenizes CJK characters for proper Chinese search.
     """
     q = query.strip()
     if not q:
         return []
+
+    # Tokenize query for CJK support
+    tokenized_q = tokenize_for_fts(q)
 
     rows = conn.execute(
         """
@@ -37,7 +43,7 @@ def fts_search(conn: sqlite3.Connection, query: str, limit: int = 10) -> List[Le
         WHERE chunks_fts MATCH ?
         LIMIT ?
         """,
-        (q, limit),
+        (tokenized_q, limit),
     ).fetchall()
 
     hits: List[LexicalHit] = []

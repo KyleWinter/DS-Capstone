@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
 
+from ..search.text_utils import tokenize_for_fts
+
 
 # ---------- Data Models (lightweight) ----------
 
@@ -69,32 +71,60 @@ class KBRepo:
     # ----- chunks -----
 
     def delete_chunks_by_file(self, file_path: str) -> int:
+        # Get chunk IDs to delete from FTS
+        chunk_ids = self.conn.execute(
+            "SELECT id FROM chunks WHERE file_path = ?", (file_path,)
+        ).fetchall()
+
+        # Delete from FTS table
+        for row in chunk_ids:
+            self.conn.execute(
+                "DELETE FROM chunks_fts WHERE rowid = ?", (row['id'],)
+            )
+
+        # Delete from chunks table
         cur = self.conn.execute("DELETE FROM chunks WHERE file_path = ?", (file_path,))
         return cur.rowcount
 
     def insert_chunks(self, chunks: Iterable[ChunkRow]) -> int:
-        rows = []
-        for c in chunks:
-            rows.append(
+        # Convert to list to allow multiple iterations
+        chunk_list = list(chunks)
+        if not chunk_list:
+            return 0
+
+        # Insert chunks one by one to track row IDs
+        inserted_ids = []
+        for c in chunk_list:
+            cur = self.conn.execute(
+                """
+                INSERT INTO chunks(file_path, heading, start_line, end_line, ordinal, content, content_len)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (c.file_path, c.heading, c.start_line, c.end_line, c.ordinal, c.content, len(c.content)),
+            )
+            inserted_ids.append(cur.lastrowid)
+
+        # Insert into FTS table with tokenized content
+        fts_rows = []
+        for row_id, c in zip(inserted_ids, chunk_list):
+            fts_rows.append(
                 (
+                    row_id,
+                    tokenize_for_fts(c.content),
+                    tokenize_for_fts(c.heading or ''),
                     c.file_path,
-                    c.heading,
-                    c.start_line,
-                    c.end_line,
-                    c.ordinal,
-                    c.content,
-                    len(c.content),
                 )
             )
 
         self.conn.executemany(
             """
-            INSERT INTO chunks(file_path, heading, start_line, end_line, ordinal, content, content_len)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO chunks_fts(rowid, content, heading, file_path)
+            VALUES (?, ?, ?, ?)
             """,
-            rows,
+            fts_rows,
         )
-        return len(rows)
+
+        return len(chunk_list)
 
     def count_chunks(self) -> int:
         r = self.conn.execute("SELECT COUNT(*) AS c FROM chunks").fetchone()
@@ -111,6 +141,9 @@ class KBRepo:
         Search FTS table, return best matches with a short preview.
         Uses snippet() for readable highlights.
         """
+        # Tokenize query for CJK support
+        tokenized_query = tokenize_for_fts(query)
+
         rows = self.conn.execute(
             """
             SELECT
@@ -123,7 +156,7 @@ class KBRepo:
             WHERE chunks_fts MATCH ?
             LIMIT ?
             """,
-            (query, limit),
+            (tokenized_query, limit),
         ).fetchall()
 
         hits: list[SearchHit] = []

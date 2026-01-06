@@ -7,7 +7,7 @@ def test_chunker_outputs_well_formed_chunks():
         "It mentions multi-head attention, positional encoding, and feed-forward layers. "
         "We want this paragraph to be long enough to pass MIN_LEN filtering. "
         "Transformer models are widely used in NLP and beyond. "
-    ) * 3  # make it > 200 chars
+    ) * 3  # make it > 200 chars in most settings
 
     md = f"""# Title
 {long_para}

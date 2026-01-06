@@ -4,19 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update cli">
-      <change afterPath="$PROJECT_DIR$/tests/conftest.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_db_schema.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_embeddings_storage.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_hybrid_rerank_mocked.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_ingest_chunker.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_repo_fts.py" afterDir="false" />
+    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update openai key usage and tests">
+      <change afterPath="$PROJECT_DIR$/pytest.ini" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/kb/search/text_utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/kb.sqlite" beforeDir="false" afterPath="$PROJECT_DIR$/data/kb.sqlite" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/build_embeddings.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/build_embeddings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/embed/openai_embed.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/embed/openai_embed.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/search/hybrid.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/hybrid.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/search/lexical.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/lexical.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/search/semantic.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/semantic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/store/repo.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/store/repo.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/kb/store/schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/store/schema.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_ingest_chunker.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_ingest_chunker.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,10 +58,14 @@
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHELLCHECK.PATH": "/Users/kyleyin/Library/Application Support/JetBrains/PyCharm2025.2/plugins/Shell Script/shellcheck",
-    "git-widget-placeholder": "main"
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/kyleyin/PycharmProjects/track3-kb/src/kb/search"
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/kb/search" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
@@ -169,7 +170,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767683824404</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="update openai key usage and tests">
+      <option name="closed" value="true" />
+      <created>1767685314017</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1767685314017</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -178,6 +187,7 @@
     <MESSAGE value="update db" />
     <MESSAGE value="update ingest" />
     <MESSAGE value="update cli" />
-    <option name="LAST_COMMIT_MESSAGE" value="update cli" />
+    <MESSAGE value="update openai key usage and tests" />
+    <option name="LAST_COMMIT_MESSAGE" value="update openai key usage and tests" />
   </component>
 </project>

@@ -45,29 +45,8 @@ USING fts5(
   file_path,
   content='chunks',
   content_rowid='id',
-  tokenize='unicode61'
+  tokenize='unicode61 remove_diacritics 0'
 );
-
--- -------------------------
--- Triggers to sync FTS with chunks
--- -------------------------
-CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks BEGIN
-  INSERT INTO chunks_fts(rowid, content, heading, file_path)
-  VALUES (new.id, new.content, COALESCE(new.heading, ''), new.file_path);
-END;
-
-CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks BEGIN
-  INSERT INTO chunks_fts(chunks_fts, rowid, content, heading, file_path)
-  VALUES ('delete', old.id, old.content, COALESCE(old.heading, ''), old.file_path);
-END;
-
-CREATE TRIGGER IF NOT EXISTS chunks_au AFTER UPDATE ON chunks BEGIN
-  INSERT INTO chunks_fts(chunks_fts, rowid, content, heading, file_path)
-  VALUES ('delete', old.id, old.content, COALESCE(old.heading, ''), old.file_path);
-
-  INSERT INTO chunks_fts(rowid, content, heading, file_path)
-  VALUES (new.id, new.content, COALESCE(new.heading, ''), new.file_path);
-END;
 
 -- -------------------------
 -- Embeddings (store vectors for chunks)
