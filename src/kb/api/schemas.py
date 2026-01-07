@@ -159,11 +159,8 @@ class NoteItemOut(BaseModel):
     title: str
     preview: str = ""
 
-class ChunkOut(BaseModel):
-    id: int
-    heading: str = ""
-    ordinal: int
-    content: str
+# ChunkOut is already defined above (line 22-30) with file_path
+# Removed duplicate definition to avoid override
 
 class NoteDetailOut(BaseModel):
     file_path: str

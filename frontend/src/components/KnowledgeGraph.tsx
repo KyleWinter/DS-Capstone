@@ -172,8 +172,12 @@ export function KnowledgeGraph({ filePath, chunkId, onNodeClick, onClose }: Know
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
       const graphNode = node as GraphNode;
+      console.log('Graph node clicked:', graphNode.data);
       if (!graphNode.data.isCentral && onNodeClick) {
+        console.log('Calling onNodeClick with filePath:', graphNode.data.filePath);
         onNodeClick(graphNode.data.filePath);
+      } else {
+        console.log('Not calling onNodeClick - isCentral:', graphNode.data.isCentral, 'onNodeClick:', !!onNodeClick);
       }
     },
     [onNodeClick]
@@ -184,14 +188,27 @@ export function KnowledgeGraph({ filePath, chunkId, onNodeClick, onClose }: Know
       {/* Header */}
       <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50 backdrop-blur-sm">
         <div className="flex items-center gap-2">
-          <Network className="w-5 h-5 text-blue-400" />
+          <Network className={`w-5 h-5 ${isLoading ? 'text-yellow-400 animate-pulse' : 'text-blue-400'}`} />
           <h2 className="text-sm font-semibold text-zinc-100">Knowledge Graph</h2>
+          {isLoading && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></div>
+              <span className="text-xs text-yellow-400">Loading...</span>
+            </div>
+          )}
+          {!isLoading && nodes.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+              <span className="text-xs text-green-400">{nodes.length - 1} related</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="p-1.5 hover:bg-zinc-800 rounded transition-colors"
             title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            disabled={isLoading}
           >
             {isFullscreen ? (
               <Minimize2 className="w-4 h-4 text-zinc-400" />
@@ -213,10 +230,29 @@ export function KnowledgeGraph({ filePath, chunkId, onNodeClick, onClose }: Know
       {/* Graph Container */}
       <div className="flex-1 relative">
         {isLoading ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-zinc-950">
+            <div className="text-center space-y-4">
+              <div className="relative w-16 h-16 mx-auto">
+                <div className="absolute inset-0 border-4 border-zinc-800 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                <Network className="w-8 h-8 text-blue-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-zinc-400 font-medium">Building knowledge graph...</p>
+                <p className="text-xs text-zinc-600">Analyzing connections</p>
+              </div>
+            </div>
+          </div>
+        ) : nodes.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-              <p className="text-sm text-zinc-500">Loading knowledge graph...</p>
+            <div className="text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto">
+                <Network className="w-6 h-6 text-zinc-600" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-zinc-400 font-medium">No connections found</p>
+                <p className="text-xs text-zinc-600">Try switching to a different mode</p>
+              </div>
             </div>
           </div>
         ) : (
@@ -271,9 +307,10 @@ export function KnowledgeGraph({ filePath, chunkId, onNodeClick, onClose }: Know
             <Panel position="top-right" className="bg-zinc-900 border border-zinc-800 rounded-lg p-2">
               <button
                 onClick={() => setMode(mode === 'cluster' ? 'embed' : 'cluster')}
-                className="px-3 py-1.5 text-xs font-medium text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 rounded transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading}
               >
-                {mode === 'cluster' ? 'Topic-based' : 'Similarity-based'}
+                {isLoading ? 'Loading...' : (mode === 'cluster' ? 'Topic-based' : 'Similarity-based')}
               </button>
             </Panel>
           </ReactFlow>
@@ -281,7 +318,7 @@ export function KnowledgeGraph({ filePath, chunkId, onNodeClick, onClose }: Know
       </div>
 
       {/* Footer */}
-      {!isLoading && (
+      {!isLoading && nodes.length > 0 && (
         <div className="px-4 py-2 border-t border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
           <p className="text-xs text-zinc-500 text-center">
             Click on a node to navigate • Drag to pan • Scroll to zoom

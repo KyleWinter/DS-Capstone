@@ -144,8 +144,28 @@ export default function DashboardPage() {
   };
 
   const handleChunkSelect = async (chunkId: number, addHistory: boolean = true) => {
+    console.log('handleChunkSelect called with chunkId:', chunkId);
+
+    // Validate chunkId
+    if (!chunkId || chunkId === 0) {
+      console.error('Invalid chunkId provided to handleChunkSelect:', chunkId);
+      return;
+    }
+
     try {
       const chunk = await getChunk(chunkId);
+      console.log('Chunk loaded successfully:', {
+        id: chunk.id,
+        file_path: chunk.file_path,
+        heading: chunk.heading,
+      });
+
+      // Validate chunk data
+      if (!chunk.file_path) {
+        console.error('Chunk has no file_path:', chunk);
+        return;
+      }
+
       setActiveChunk(chunk);
       setActiveChunks([]);
       setActiveFileContent("");
@@ -237,6 +257,14 @@ export default function DashboardPage() {
   };
 
   const handleRelatedNoteClick = async (filePath: string, addHistory: boolean = true) => {
+    console.log('handleRelatedNoteClick called with filePath:', filePath, 'type:', typeof filePath);
+
+    // Validate filePath
+    if (!filePath || typeof filePath !== 'string' || filePath.trim() === '') {
+      console.error('Invalid filePath provided to handleRelatedNoteClick:', filePath);
+      return;
+    }
+
     try {
       // Load both file content and chunks in parallel
       const [fileContent, chunks] = await Promise.all([
@@ -263,6 +291,8 @@ export default function DashboardPage() {
 
         // Scroll to top of the page smoothly
         window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        console.warn('No chunks found for file:', filePath);
       }
     } catch (error) {
       console.error("Failed to load related note:", error);
@@ -271,14 +301,34 @@ export default function DashboardPage() {
 
   // Handle AI Suggestion clicks - unified handler for all views
   const handleSuggestionClick = async (chunkId: number) => {
-    if (displayMode === 'file' && activeFilePath) {
-      // In file mode, scroll to the chunk in the current file
-      // But first check if the chunk belongs to the current file
-      try {
-        const chunk = await getChunk(chunkId);
+    console.log('handleSuggestionClick called with chunkId:', chunkId, 'displayMode:', displayMode, 'activeFilePath:', activeFilePath);
 
+    // Validate chunkId
+    if (!chunkId || chunkId === 0) {
+      console.error('Invalid chunkId provided to handleSuggestionClick:', chunkId);
+      return;
+    }
+
+    try {
+      // Always fetch the chunk first to get the file_path
+      const chunk = await getChunk(chunkId);
+      console.log('Fetched chunk:', {
+        id: chunk.id,
+        file_path: chunk.file_path,
+        heading: chunk.heading,
+      });
+
+      // Validate chunk data
+      if (!chunk.file_path) {
+        console.error('Chunk has no file_path:', chunk);
+        return;
+      }
+
+      if (displayMode === 'file' && activeFilePath) {
+        // In file mode, check if the chunk belongs to the current file
         if (chunk.file_path === activeFilePath) {
           // Same file: just scroll to the chunk and record scroll history
+          console.log('Same file - scrolling to chunk');
           scrollToChunk(chunkId);
           addToHistory({
             type: 'file-scroll',
@@ -288,18 +338,24 @@ export default function DashboardPage() {
           });
         } else {
           // Different file: load the new file
+          console.log('Different file - loading new file:', chunk.file_path);
           await handleRelatedNoteClick(chunk.file_path, true);
           // Then scroll to the specific chunk
           setTimeout(() => scrollToChunk(chunkId), 300);
         }
-      } catch (error) {
-        console.error("Failed to handle suggestion click:", error);
-        // Fallback: load chunk in single mode
+      } else {
+        // In single chunk mode, load the new chunk
+        console.log('Single chunk mode - loading chunk');
         await handleChunkSelect(chunkId, true);
       }
-    } else {
-      // In single chunk mode, load the new chunk
-      await handleChunkSelect(chunkId, true);
+    } catch (error) {
+      console.error("Failed to handle suggestion click:", error);
+      // Fallback: try to load chunk in single mode if chunk fetch failed
+      try {
+        await handleChunkSelect(chunkId, true);
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+      }
     }
   };
 
@@ -688,7 +744,10 @@ export default function DashboardPage() {
                 {activeChunks.length > 0 && activeChunks[0].id && activeChunks[0].id > 0 && (
                   <RelatedNotes
                     chunkId={activeChunks[0].id}
-                    onNoteClick={handleRelatedNoteClick}
+                    onNoteClick={(path) => {
+                      console.log('RelatedNotes onNoteClick called with path:', path);
+                      handleRelatedNoteClick(path, true);
+                    }}
                   />
                 )}
               </article>
@@ -725,31 +784,33 @@ export default function DashboardPage() {
                 style={{ width: `${rightSidebarWidth}px` }}
               >
               {/* Tab Switcher */}
-              <div className="h-12 border-b border-l border-zinc-800 bg-zinc-900/50 backdrop-blur-sm flex items-center px-2 gap-1">
-                <button
-                  onClick={() => setRightPanelMode('suggestions')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    rightPanelMode === 'suggestions'
-                      ? 'bg-zinc-800 text-zinc-100'
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-                  }`}
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                  Suggestions
-                </button>
-                <button
-                  onClick={() => setRightPanelMode('graph')}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    rightPanelMode === 'graph'
-                      ? 'bg-zinc-800 text-zinc-100'
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-                  }`}
-                >
-                  <Network className="w-3.5 h-3.5" />
-                  Graph
-                </button>
+              <div className="h-12 border-b border-l border-zinc-800 bg-zinc-900/50 backdrop-blur-sm flex items-center justify-between px-4 gap-2">
+                <div className="flex gap-1 flex-1">
+                  <button
+                    onClick={() => setRightPanelMode('suggestions')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      rightPanelMode === 'suggestions'
+                        ? 'bg-zinc-800 text-zinc-100'
+                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    Suggestions
+                  </button>
+                  <button
+                    onClick={() => setRightPanelMode('graph')}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      rightPanelMode === 'graph'
+                        ? 'bg-zinc-800 text-zinc-100'
+                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                    }`}
+                  >
+                    <Network className="w-3.5 h-3.5" />
+                    Graph
+                  </button>
+                </div>
               </div>
 
               {/* Content */}
@@ -763,7 +824,10 @@ export default function DashboardPage() {
                   <KnowledgeGraph
                     filePath={filePath}
                     chunkId={chunkId}
-                    onNodeClick={handleRelatedNoteClick}
+                    onNodeClick={(path) => {
+                      console.log('KnowledgeGraph onNodeClick called with path:', path);
+                      handleRelatedNoteClick(path, true);
+                    }}
                   />
                 )}
               </div>
