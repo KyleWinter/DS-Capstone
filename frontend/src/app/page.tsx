@@ -16,6 +16,8 @@ import { FileDirectoryTree } from "@/components/FileDirectoryTree";
 import { SuggestionPanel } from "@/components/SuggestionPanel";
 import { CommandPalette } from "@/components/CommandPalette";
 import { RelatedNotes } from "@/components/RelatedNotes";
+import { KnowledgeGraph } from "@/components/KnowledgeGraph";
+import { ResizeHandle } from "@/components/ResizeHandle";
 import { TreeNode } from "@/lib/mockData";
 import { listClusters, getChunk, getClusterDetail, ChunkDetail, getFileTree, FileTreeNode, getFileChunks, getFileContent } from "@/lib/api";
 import { buildClusterTree, pathToBreadcrumbs, chunksToTreeNodes } from "@/lib/utils";
@@ -26,6 +28,7 @@ import rehypeRaw from "rehype-raw";
 export default function DashboardPage() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+  const [rightPanelMode, setRightPanelMode] = useState<'suggestions' | 'graph'>('suggestions');
   const [activeNote, setActiveNote] = useState<TreeNode | null>(null);
   const [activeChunk, setActiveChunk] = useState<ChunkDetail | null>(null);
   const [activeChunks, setActiveChunks] = useState<ChunkDetail[]>([]);
@@ -37,6 +40,10 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'clusters' | 'files'>('clusters');
   const [activeFilePath, setActiveFilePath] = useState<string>("");
+
+  // Resizable panel widths
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState(288); // 72 * 4 = 288px (w-72)
+  const [rightSidebarWidth, setRightSidebarWidth] = useState(320); // 80 * 4 = 320px (w-80)
 
   // Load clusters and file tree on mount
   useEffect(() => {
@@ -181,31 +188,115 @@ export default function DashboardPage() {
   const scrollToChunk = (chunkId: number) => {
     const anchor = document.getElementById(`chunk-${chunkId}`);
     if (anchor) {
+      // Scroll to the anchor with smooth behavior
       anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       // Find the next sibling element to highlight (the actual content after anchor)
       const nextElement = anchor.nextElementSibling;
 
       if (nextElement) {
+        // Remove any existing highlights first
+        document.querySelectorAll('.highlight-chunk').forEach(el => {
+          el.classList.remove('highlight-chunk');
+        });
+
         // Highlight the content briefly
         nextElement.classList.add('highlight-chunk');
         setTimeout(() => {
           nextElement?.classList.remove('highlight-chunk');
         }, 2000);
       }
+    } else {
+      console.warn(`Chunk anchor not found for chunk_id: ${chunkId}`);
     }
+  };
+
+  // Handle left sidebar resize
+  const handleLeftSidebarResize = (deltaX: number) => {
+    setLeftSidebarWidth((prevWidth) => {
+      const newWidth = prevWidth + deltaX;
+      // Constrain between 200px and 500px
+      return Math.min(Math.max(newWidth, 200), 500);
+    });
+  };
+
+  // Handle right sidebar resize
+  const handleRightSidebarResize = (deltaX: number) => {
+    setRightSidebarWidth((prevWidth) => {
+      const newWidth = prevWidth - deltaX; // Subtract because dragging right should shrink
+      // Constrain between 250px and 600px
+      return Math.min(Math.max(newWidth, 250), 600);
+    });
   };
 
   // Prepare markdown content with anchors for navigation
   const markdownWithAnchors = useMemo(() => {
     if (!activeFileContent || activeChunks.length === 0) return activeFileContent;
 
-    // Insert anchors before each chunk's content position
-    // This is a simple approach - we add anchors at the beginning
-    // A more sophisticated approach would try to match chunk content to file content
-    return activeChunks
-      .map(chunk => `<div id="chunk-${chunk.id}" class="chunk-anchor"></div>`)
-      .join('\n') + '\n\n' + activeFileContent;
+    // Sort chunks by ordinal to maintain order
+    const sortedChunks = [...activeChunks].sort((a, b) => a.ordinal - b.ordinal);
+
+    // Build a list of insertions (position, anchor html)
+    const insertions: Array<{ position: number; anchor: string }> = [];
+
+    for (const chunk of sortedChunks) {
+      // Try to find chunk content in the file
+      const chunkContent = chunk.content.trim();
+
+      let position = -1;
+
+      // Strategy 1: Try to find the heading in markdown format
+      if (chunk.heading) {
+        const headingPatterns = [
+          `# ${chunk.heading}`,
+          `## ${chunk.heading}`,
+          `### ${chunk.heading}`,
+          `#### ${chunk.heading}`,
+          `##### ${chunk.heading}`,
+          `###### ${chunk.heading}`,
+        ];
+
+        for (const pattern of headingPatterns) {
+          position = activeFileContent.indexOf(pattern);
+          if (position !== -1) break;
+        }
+      }
+
+      // Strategy 2: If heading not found, try to match a significant portion of content
+      if (position === -1 && chunkContent.length > 20) {
+        // Try to match the first 150 characters of content (or less if content is shorter)
+        const contentPreview = chunkContent.substring(0, Math.min(150, chunkContent.length));
+        position = activeFileContent.indexOf(contentPreview);
+      }
+
+      // Strategy 3: Try matching first line of content
+      if (position === -1) {
+        const firstLine = chunkContent.split('\n')[0].trim();
+        if (firstLine.length > 10) {
+          position = activeFileContent.indexOf(firstLine);
+        }
+      }
+
+      // If we found a position, add an insertion point
+      if (position !== -1) {
+        insertions.push({
+          position,
+          anchor: `<div id="chunk-${chunk.id}" class="chunk-anchor"></div>\n`
+        });
+      }
+    }
+
+    // Sort insertions by position (descending) to insert from back to front
+    // This prevents position shifts as we insert
+    insertions.sort((a, b) => b.position - a.position);
+
+    // Apply insertions
+    let result = activeFileContent;
+    for (const insertion of insertions) {
+      result = result.slice(0, insertion.position) + insertion.anchor + result.slice(insertion.position);
+    }
+
+    return result;
   }, [activeFileContent, activeChunks]);
 
   return (
@@ -250,7 +341,10 @@ export default function DashboardPage() {
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar */}
-        <aside className="w-72 border-r border-zinc-800 bg-zinc-950 flex flex-col overflow-hidden">
+        <aside
+          className="border-r border-zinc-800 bg-zinc-950 flex flex-col overflow-hidden"
+          style={{ width: `${leftSidebarWidth}px` }}
+        >
           {/* Header with view toggle */}
           <div className="px-4 py-3 border-b border-zinc-800">
             <div className="flex items-center justify-between mb-2">
@@ -315,6 +409,9 @@ export default function DashboardPage() {
             )}
           </div>
         </aside>
+
+        {/* Left Resize Handle */}
+        <ResizeHandle onResize={handleLeftSidebarResize} />
 
         {/* Center Panel - Editor/Viewer */}
         <main className="flex-1 flex flex-col overflow-hidden bg-zinc-950">
@@ -431,14 +528,61 @@ export default function DashboardPage() {
           </div>
         </main>
 
-        {/* Right Sidebar - AI Suggestions */}
+        {/* Right Sidebar - AI Suggestions / Knowledge Graph */}
         {isRightSidebarOpen && (activeChunk || activeChunks.length > 0) && (
-          <aside className="w-80">
-            <SuggestionPanel
-              chunkId={activeChunk?.id || (activeChunks.length > 0 ? activeChunks[0].id : 0)}
-              onNoteClick={displayMode === 'file' ? scrollToChunk : handleChunkSelect}
-            />
+          <>
+            {/* Right Resize Handle */}
+            <ResizeHandle onResize={handleRightSidebarResize} />
+
+            <aside
+              className="flex flex-col"
+              style={{ width: `${rightSidebarWidth}px` }}
+            >
+            {/* Tab Switcher */}
+            <div className="h-12 border-b border-l border-zinc-800 bg-zinc-900/50 backdrop-blur-sm flex items-center px-2 gap-1">
+              <button
+                onClick={() => setRightPanelMode('suggestions')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  rightPanelMode === 'suggestions'
+                    ? 'bg-zinc-800 text-zinc-100'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                }`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                Suggestions
+              </button>
+              <button
+                onClick={() => setRightPanelMode('graph')}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  rightPanelMode === 'graph'
+                    ? 'bg-zinc-800 text-zinc-100'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                }`}
+              >
+                <Network className="w-3.5 h-3.5" />
+                Graph
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-hidden border-l border-zinc-800">
+              {rightPanelMode === 'suggestions' ? (
+                <SuggestionPanel
+                  chunkId={activeChunk?.id || (activeChunks.length > 0 ? activeChunks[0].id : 0)}
+                  onNoteClick={displayMode === 'file' ? scrollToChunk : handleChunkSelect}
+                />
+              ) : (
+                <KnowledgeGraph
+                  filePath={activeFilePath || (activeChunk?.file_path || (activeChunks.length > 0 ? activeChunks[0].file_path : ''))}
+                  chunkId={activeChunk?.id || (activeChunks.length > 0 ? activeChunks[0].id : 0)}
+                  onNodeClick={handleRelatedNoteClick}
+                />
+              )}
+            </div>
           </aside>
+          </>
         )}
       </div>
 
