@@ -4,13 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update recommender">
-      <change afterPath="$PROJECT_DIR$/src/kb/api/schemas.py" afterDir="false" />
+    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update readme">
+      <change afterPath="$PROJECT_DIR$/scripts/test_search_print.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/api/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/api/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/smoke_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/smoke_api.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/kb/api/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/api/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/suggest/recommender.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/suggest/recommender.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/api/schemas.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/api/schemas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/embed/local_embed.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/embed/local_embed.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -52,6 +52,7 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python.build_clusters.executor": "Run",
     "Python.demo_cli.executor": "Run",
+    "Python.smoke_api.executor": "Run",
     "Python.stats.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
@@ -69,7 +70,7 @@
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.demo_cli">
+  <component name="RunManager" selected="Python 测试.Python 测试 (test_search_print.py 内)">
     <configuration name="build_clusters" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="track3-kb" />
       <option name="ENV_FILES" value="" />
@@ -114,6 +115,28 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="smoke_api" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="track3-kb" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/scripts" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/smoke_api.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="stats" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="track3-kb" />
       <option name="ENV_FILES" value="" />
@@ -136,8 +159,25 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="Python 测试 (test_search_print.py 内)" type="tests" factoryName="Autodetect" temporary="true" nameIsGenerated="true">
+      <module name="track3-kb" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/scripts/test_search_print.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python 测试.Python 测试 (test_search_print.py 内)" />
+        <item itemvalue="Python.smoke_api" />
         <item itemvalue="Python.demo_cli" />
         <item itemvalue="Python.stats" />
         <item itemvalue="Python.build_clusters" />
@@ -255,7 +295,23 @@
       <option name="project" value="LOCAL" />
       <updated>1767693489201</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="update backend server">
+      <option name="closed" value="true" />
+      <created>1767695638703</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1767695638703</updated>
+    </task>
+    <task id="LOCAL-00014" summary="update readme">
+      <option name="closed" value="true" />
+      <created>1767763890680</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1767763890680</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -268,6 +324,8 @@
     <MESSAGE value="update schema.sql" />
     <MESSAGE value="update cluster" />
     <MESSAGE value="update recommender" />
-    <option name="LAST_COMMIT_MESSAGE" value="update recommender" />
+    <MESSAGE value="update backend server" />
+    <MESSAGE value="update readme" />
+    <option name="LAST_COMMIT_MESSAGE" value="update readme" />
   </component>
 </project>
