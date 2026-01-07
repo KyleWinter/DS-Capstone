@@ -31,12 +31,12 @@ class ChunkOut(BaseModel):
 
 
 # -------------------------
-# Context-aware recommendation
+# Context-aware recommendation (chunk-level)
 # -------------------------
 
 class RelatedItemOut(BaseModel):
     """
-    Recommendation result for a given context chunk.
+    Recommendation result for a given context chunk (chunk-level).
     """
     chunk_id: int
     file_path: str
@@ -47,8 +47,41 @@ class RelatedItemOut(BaseModel):
     score: Optional[float] = None
 
     # Explanation of why this item is recommended
-    # e.g. "same_topic" | "semantic_similarity"
     reason: Literal["same_topic", "semantic_similarity"]
+
+
+# -------------------------
+# Context-aware recommendation (note-level / full note)
+# -------------------------
+
+class RelatedNoteOut(BaseModel):
+    """
+    Recommendation result aggregated to a full note (file-level).
+
+    We compute similarity at chunk-level for precision, then aggregate to file-level
+    for better navigation.
+    """
+    file_path: str
+
+    # Aggregated score for the whole note (e.g., max chunk score in that file)
+    score: float
+
+    # Why this note is recommended (based on the selected mode)
+    reason: Literal["same_topic", "semantic_similarity"]
+
+    # How many recommended chunks were found in this note
+    matched_chunks: int = 0
+
+    # Optional: show which chunks in that note contributed (for explainability / UI)
+    top_chunk_ids: List[int] = Field(default_factory=list)
+
+
+class RelatedNotesResponse(BaseModel):
+    """
+    Unified note-level recommendation response.
+    """
+    mode: Literal["cluster", "embed"]
+    items: List[RelatedNoteOut]
 
 
 # -------------------------

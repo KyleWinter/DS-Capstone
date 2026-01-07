@@ -27,7 +27,7 @@ def print_hit(i: int, hit: Dict):
     print()
 
 
-def test_search(query: str, limit: int = 5):
+def run_search(query: str, limit: int = 5):
     q = urllib.parse.quote(query)
     status, data = get(f"/search?q={q}&limit={limit}")
 
@@ -37,6 +37,7 @@ def test_search(query: str, limit: int = 5):
         print(f"❌ HTTP {status}")
         return
 
+    # New API shape: {"mode": "...", "total": ..., "items": [...]}
     print(f"mode  : {data.get('mode')}")
     print(f"total : {data.get('total')}")
     hits: List[Dict] = data.get("items", [])
@@ -52,16 +53,14 @@ def test_search(query: str, limit: int = 5):
 
 
 def main():
-    # 你可以在这里自由加测试词
     queries = [
         "死锁",
         "线程池",
         "RPC",
         "共识",
     ]
-
     for q in queries:
-        test_search(q, limit=5)
+        run_search(q, limit=5)
 
 
 if __name__ == "__main__":

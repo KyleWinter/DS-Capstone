@@ -4,13 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update readme">
-      <change afterPath="$PROJECT_DIR$/scripts/test_search_print.py" afterDir="false" />
+    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update routes">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/smoke_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/smoke_api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/test_search_print.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/test_search_print.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/kb/api/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/api/routes.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/kb/api/schemas.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/api/schemas.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/embed/local_embed.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/embed/local_embed.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,6 +48,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python 测试.Python 测试 (test_search_print.py 内).executor": "Run",
     "Python.build_clusters.executor": "Run",
     "Python.demo_cli.executor": "Run",
     "Python.smoke_api.executor": "Run",
@@ -311,7 +310,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767763890680</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="update routes">
+      <option name="closed" value="true" />
+      <created>1767766479593</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1767766479593</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -326,6 +333,7 @@
     <MESSAGE value="update recommender" />
     <MESSAGE value="update backend server" />
     <MESSAGE value="update readme" />
-    <option name="LAST_COMMIT_MESSAGE" value="update readme" />
+    <MESSAGE value="update routes" />
+    <option name="LAST_COMMIT_MESSAGE" value="update routes" />
   </component>
 </project>

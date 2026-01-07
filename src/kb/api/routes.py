@@ -29,6 +29,8 @@ from .schemas import (
     TopicListItemOut,
     TopicMetaOut,
     TopicDetailOut,
+    RelatedNoteOut,
+    RelatedNotesResponse,
 )
 
 router = APIRouter()
@@ -305,3 +307,73 @@ def api_topic_detail(
     conn: sqlite3.Connection = Depends(get_db),
 ) -> TopicDetailOut:
     return api_cluster_detail(cluster_id=topic_id, limit=limit, conn=conn)
+
+
+# -------------------------
+# Context-aware note-level recommendations
+# -------------------------
+
+@router.get(
+    "/chunks/{chunk_id}/related-notes",
+    response_model=RelatedNotesResponse,
+)
+def api_related_notes(
+    chunk_id: int,
+    mode: Literal["cluster", "embed"] = Query("embed"),
+    k: int = Query(5, ge=1, le=50),
+    conn: sqlite3.Connection = Depends(get_db),
+) -> RelatedNotesResponse:
+    """
+    Context-aware recommendations aggregated to full notes (file-level).
+
+    We compute similarity at chunk-level for precision, then aggregate results
+    by file_path for better human navigation.
+    """
+    # validate chunk exists
+    row = get_chunk_by_id(conn, chunk_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Chunk not found: {chunk_id}")
+
+    # 1) get chunk-level recommendations
+    if mode == "cluster":
+        chunk_items = related_by_cluster(conn, chunk_id, k=50)
+        reason = "same_topic"
+    else:
+        chunk_items = related_by_embedding(conn, chunk_id, k=50)
+        reason = "semantic_similarity"
+
+    if not chunk_items:
+        return RelatedNotesResponse(mode=mode, items=[])
+
+    # 2) aggregate by file_path
+    by_file: dict[str, list] = {}
+    for it in chunk_items:
+        by_file.setdefault(it.file_path, []).append(it)
+
+    # 3) compute note-level score (max chunk score is the safest default)
+    notes: list[RelatedNoteOut] = []
+    for file_path, items in by_file.items():
+        # score aggregation
+        if mode == "embed":
+            score = max(float(it.score) for it in items if it.score is not None)
+        else:
+            score = 1.0  # structural recommendation, score not meaningful
+
+        notes.append(
+            RelatedNoteOut(
+                file_path=file_path,
+                score=score,
+                reason=reason,
+                matched_chunks=len(items),
+                top_chunk_ids=[it.chunk_id for it in items[:5]],
+            )
+        )
+
+    # 4) sort and truncate
+    notes.sort(key=lambda n: n.score, reverse=True)
+    notes = notes[:k]
+
+    return RelatedNotesResponse(
+        mode=mode,
+        items=notes,
+    )
