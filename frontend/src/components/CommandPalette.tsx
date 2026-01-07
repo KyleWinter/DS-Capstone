@@ -70,8 +70,8 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
         try {
           if (searchMode === "keyword") {
             // Use FTS search for keyword mode
-            const chunks = await searchChunks(query, 10);
-            const mappedResults: SearchResult[] = chunks.map((chunk) => ({
+            const response = await searchChunks(query, 10);
+            const mappedResults: SearchResult[] = response.items.map((chunk) => ({
               id: `chunk-${chunk.chunk_id}`,
               title: chunk.heading || chunk.file_path.split('/').pop() || 'Untitled',
               path: chunk.file_path,

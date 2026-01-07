@@ -15,6 +15,7 @@ import { FileTree } from "@/components/FileTree";
 import { FileDirectoryTree } from "@/components/FileDirectoryTree";
 import { SuggestionPanel } from "@/components/SuggestionPanel";
 import { CommandPalette } from "@/components/CommandPalette";
+import { RelatedNotes } from "@/components/RelatedNotes";
 import { TreeNode } from "@/lib/mockData";
 import { listClusters, getChunk, getClusterDetail, ChunkDetail, getFileTree, FileTreeNode, getFileChunks, getFileContent } from "@/lib/api";
 import { buildClusterTree, pathToBreadcrumbs, chunksToTreeNodes } from "@/lib/utils";
@@ -149,6 +150,31 @@ export default function DashboardPage() {
       } catch (error) {
         console.error("Failed to load file:", error);
       }
+    }
+  };
+
+  const handleRelatedNoteClick = async (filePath: string) => {
+    try {
+      // Load both file content and chunks in parallel
+      const [fileContent, chunks] = await Promise.all([
+        getFileContent(filePath),
+        getFileChunks(filePath)
+      ]);
+
+      if (chunks.length > 0) {
+        // Update all state
+        setActiveFilePath(filePath);
+        setActiveFileContent(fileContent);
+        setActiveChunks(chunks);
+        setActiveChunk(null);
+        setDisplayMode('file');
+        setBreadcrumbs(pathToBreadcrumbs(filePath));
+
+        // Scroll to top of the page smoothly
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch (error) {
+      console.error("Failed to load related note:", error);
     }
   };
 
@@ -383,6 +409,14 @@ export default function DashboardPage() {
                 >
                   {markdownWithAnchors}
                 </ReactMarkdown>
+
+                {/* Related Notes Section */}
+                {activeChunks.length > 0 && (
+                  <RelatedNotes
+                    chunkId={activeChunks[0].id}
+                    onNoteClick={handleRelatedNoteClick}
+                  />
+                )}
               </article>
             ) : (
               <div className="flex items-center justify-center h-full">
