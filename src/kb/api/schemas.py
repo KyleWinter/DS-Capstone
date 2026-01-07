@@ -148,6 +148,28 @@ class FileTreeNode(BaseModel):
     children: Optional[List[FileTreeNode]] = None
     chunk_ids: Optional[List[int]] = None  # chunk IDs for files
 
+class ModuleOut(BaseModel):
+    id: int
+    name: str
+    description: str = ""
+    file_count: int
+
+class NoteItemOut(BaseModel):
+    file_path: str
+    title: str
+    preview: str = ""
+
+class ChunkOut(BaseModel):
+    id: int
+    heading: str = ""
+    ordinal: int
+    content: str
+
+class NoteDetailOut(BaseModel):
+    file_path: str
+    title: str
+    chunks: List[ChunkOut]
+
 FileTreeNode.model_rebuild()  # For self-referencing model
 
 

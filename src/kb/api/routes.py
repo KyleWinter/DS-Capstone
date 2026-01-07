@@ -2,14 +2,15 @@
 from __future__ import annotations
 
 from typing import Literal, List
+from .schemas import ModuleOut, NoteItemOut, NoteDetailOut, ChunkOut
 
+from src.kb.store.db import get_conn, init_db
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 import sqlite3
 from pathlib import Path
 
 from src.kb.config import DB_PATH, NOTES_DIR
-from src.kb.store.db import get_conn
 
 from src.kb.search.lexical import fts_search, get_chunk_by_id
 from src.kb.suggest.recommender import (
@@ -552,3 +553,110 @@ def api_file_content(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
+
+
+def _preview(text: str, n: int = 180) -> str:
+    s = (text or "").replace("\n", " ").strip()
+    return s[:n] + ("…" if len(s) > n else "")
+
+@router.get("/modules", response_model=List[ModuleOut])
+def list_modules(
+    limit: int = Query(50, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+):
+    conn = get_conn(DB_PATH)
+    init_db(conn)
+
+    rows = conn.execute(
+        """
+        SELECT m.id, m.name, COALESCE(m.description,'') AS description,
+               COUNT(fm.file_path) AS file_count
+        FROM modules m
+        LEFT JOIN file_modules fm ON fm.module_id = m.id
+        GROUP BY m.id
+        ORDER BY file_count DESC, m.name ASC
+        LIMIT ? OFFSET ?
+        """,
+        (limit, offset),
+    ).fetchall()
+    conn.close()
+    return [
+        ModuleOut(
+            id=int(r["id"]),
+            name=str(r["name"]),
+            description=str(r["description"]),
+            file_count=int(r["file_count"]),
+        )
+        for r in rows
+    ]
+
+
+@router.get("/modules/{module_id}/notes", response_model=List[NoteItemOut])
+def list_notes_in_module(
+    module_id: int,
+    limit: int = Query(200, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+):
+    conn = get_conn(DB_PATH)
+    init_db(conn)
+
+    rows = conn.execute(
+        """
+        SELECT fm.file_path,
+               (SELECT content FROM chunks c WHERE c.file_path = fm.file_path ORDER BY ordinal LIMIT 1) AS first_chunk
+        FROM file_modules fm
+        WHERE fm.module_id = ?
+        ORDER BY fm.file_path ASC
+        LIMIT ? OFFSET ?
+        """,
+        (module_id, limit, offset),
+    ).fetchall()
+    conn.close()
+
+    out = []
+    for r in rows:
+        fp = str(r["file_path"])
+        out.append(
+            NoteItemOut(
+                file_path=fp,
+                title=Path(fp).stem,
+                preview=_preview(str(r["first_chunk"] or "")),
+            )
+        )
+    return out
+
+
+@router.get("/notes", response_model=NoteDetailOut)
+def get_note_detail(file_path: str = Query(..., min_length=1)):
+    conn = get_conn(DB_PATH)
+    init_db(conn)
+
+    rows = conn.execute(
+        """
+        SELECT id, COALESCE(heading,'') AS heading, ordinal, content
+        FROM chunks
+        WHERE file_path=?
+        ORDER BY ordinal ASC
+        """,
+        (file_path,),
+    ).fetchall()
+
+    if not rows:
+        conn.close()
+        raise HTTPException(status_code=404, detail="note not found")
+
+    chunks = [
+        ChunkOut(
+            id=int(r["id"]),
+            heading=str(r["heading"]),
+            ordinal=int(r["ordinal"]),
+            content=str(r["content"]),
+        )
+        for r in rows
+    ]
+    conn.close()
+    return NoteDetailOut(
+        file_path=file_path,
+        title=Path(file_path).stem,
+        chunks=chunks,
+    )

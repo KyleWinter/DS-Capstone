@@ -87,3 +87,8 @@ python scripts/build_index.py
 python scripts/build_embeddings.py 
 python scripts/build_clusters.py 
 python scripts/verify_db.py
+
+python scripts/build_modules.py --distance-threshold 0.25
+python scripts/build_modules.py --distance-threshold 0.40
+
+python scripts/build_modules.py --distance-threshold 0.40 --merge-threshold 0.80

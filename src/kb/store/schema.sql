@@ -86,3 +86,20 @@ CREATE TABLE IF NOT EXISTS cluster_members (
 
 CREATE INDEX IF NOT EXISTS idx_cluster_members_chunk ON cluster_members(chunk_id);
 CREATE INDEX IF NOT EXISTS idx_cluster_members_cluster ON cluster_members(cluster_id);
+
+CREATE TABLE IF NOT EXISTS modules (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_at REAL DEFAULT (strftime('%s','now'))
+);
+
+CREATE TABLE IF NOT EXISTS file_modules (
+  file_path TEXT PRIMARY KEY,
+  module_id INTEGER NOT NULL,
+  score REAL DEFAULT 1.0,
+  updated_at REAL DEFAULT (strftime('%s','now')),
+  FOREIGN KEY(module_id) REFERENCES modules(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_file_modules_module_id ON file_modules(module_id);

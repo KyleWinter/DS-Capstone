@@ -70,3 +70,9 @@ def embed_texts(
 
     dims = len(all_embeddings[0]) if all_embeddings else 0
     return {"model": model, "dims": dims, "embeddings": all_embeddings}
+
+def name_cluster(examples: list[dict], model="gpt-5.2") -> dict:
+    """
+    examples: [{"title": "...", "headings": [...]}...]
+    return: {"folder_name": "...", "description": "..."}
+    """
