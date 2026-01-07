@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  --border: 217 33% 17%;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: rgb(9 9 11);
+  color: rgb(228 228 231);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(63 63 70);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(82 82 91);
+}
+
+/* Markdown styling improvements */
+.prose-invert {
+  @apply text-zinc-300;
+}
+
+.prose-invert h1,
+.prose-invert h2,
+.prose-invert h3,
+.prose-invert h4 {
+  @apply text-zinc-100 font-semibold;
+}
+
+.prose-invert h1 {
+  @apply text-3xl mb-6 mt-8;
+}
+
+.prose-invert h2 {
+  @apply text-2xl mb-4 mt-6;
+}
+
+.prose-invert h3 {
+  @apply text-xl mb-3 mt-4;
+}
+
+.prose-invert code {
+  @apply bg-zinc-900 px-1.5 py-0.5 rounded text-sm text-blue-400;
+}
+
+.prose-invert pre {
+  @apply bg-zinc-900 border border-zinc-800 rounded-lg p-4 overflow-x-auto;
+}
+
+.prose-invert pre code {
+  @apply bg-transparent p-0 text-zinc-300;
+}
+
+.prose-invert a {
+  @apply text-blue-400 hover:text-blue-300 transition-colors;
+}
+
+.prose-invert strong {
+  @apply text-zinc-100 font-semibold;
+}
+
+.prose-invert blockquote {
+  @apply border-l-4 border-zinc-700 pl-4 italic text-zinc-400;
+}
+
+.prose-invert ul,
+.prose-invert ol {
+  @apply my-4 pl-6;
+}
+
+.prose-invert li {
+  @apply my-2;
+}
