@@ -4,16 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update routes">
-      <change afterPath="$PROJECT_DIR$/scripts/tests/test_full_flow_print.py" afterDir="false" />
+    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update database">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/kb.sqlite" beforeDir="false" afterPath="$PROJECT_DIR$/data/kb.sqlite" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/kb.sqlite-shm" beforeDir="false" afterPath="$PROJECT_DIR$/data/kb.sqlite-shm" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/kb.sqlite-wal" beforeDir="false" afterPath="$PROJECT_DIR$/data/kb.sqlite-wal" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/build_index.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/build_index.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/smoke_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/tests/smoke_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/test_search_print.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/tests/test_search_print.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/ingest/chunker.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/ingest/chunker.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/ingest/parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/ingest/parser.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -326,7 +320,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767767044915</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="update database">
+      <option name="closed" value="true" />
+      <created>1767769754624</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1767769754624</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -342,6 +344,7 @@
     <MESSAGE value="update backend server" />
     <MESSAGE value="update readme" />
     <MESSAGE value="update routes" />
-    <option name="LAST_COMMIT_MESSAGE" value="update routes" />
+    <MESSAGE value="update database" />
+    <option name="LAST_COMMIT_MESSAGE" value="update database" />
   </component>
 </project>
