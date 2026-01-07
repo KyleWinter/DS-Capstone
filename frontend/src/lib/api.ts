@@ -23,6 +23,26 @@ export interface RelatedItem {
   heading: string;
   preview: string;
   score: number | null;
+  reason: 'same_topic' | 'semantic_similarity';
+}
+
+export interface RelatedNote {
+  file_path: string;
+  score: number;
+  reason: 'same_topic' | 'semantic_similarity';
+  matched_chunks: number;
+  top_chunk_ids: number[];
+}
+
+export interface RelatedNotesResponse {
+  mode: 'cluster' | 'embed';
+  items: RelatedNote[];
+}
+
+export interface SearchResponse {
+  mode: 'lexical' | 'semantic';
+  total: number | null;
+  items: ChunkHit[];
 }
 
 export interface ClusterSuggestion {
@@ -51,10 +71,18 @@ export interface ClusterDetail {
   members: ChunkHit[];
 }
 
+export interface FileTreeNode {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  children?: FileTreeNode[];
+  chunk_ids?: number[];
+}
+
 /**
  * Search for chunks using FTS (Full-Text Search)
  */
-export async function searchChunks(query: string, limit: number = 10): Promise<ChunkHit[]> {
+export async function searchChunks(query: string, limit: number = 10): Promise<SearchResponse> {
   const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&limit=${limit}`);
   if (!response.ok) {
     throw new Error(`Search failed: ${response.statusText}`);
@@ -74,7 +102,18 @@ export async function getChunk(chunkId: number): Promise<ChunkDetail> {
 }
 
 /**
- * Get related items for a chunk
+ * Get all chunks for a specific file
+ */
+export async function getFileChunks(filePath: string): Promise<ChunkDetail[]> {
+  const response = await fetch(`${API_BASE}/files/chunks?file_path=${encodeURIComponent(filePath)}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file chunks: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get related items for a chunk (chunk-level)
  * @param chunkId - The chunk ID
  * @param mode - "cluster" for cluster-based, "embed" for embedding-based
  * @param k - Number of related items to return
@@ -89,6 +128,26 @@ export async function getRelatedChunks(
   );
   if (!response.ok) {
     throw new Error(`Failed to fetch related chunks: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get related notes for a chunk (note-level / file-level)
+ * @param chunkId - The chunk ID
+ * @param mode - "cluster" for cluster-based, "embed" for embedding-based
+ * @param k - Number of related notes to return
+ */
+export async function getRelatedNotes(
+  chunkId: number,
+  mode: 'cluster' | 'embed' = 'embed',
+  k: number = 5
+): Promise<RelatedNotesResponse> {
+  const response = await fetch(
+    `${API_BASE}/chunks/${chunkId}/related-notes?mode=${mode}&k=${k}`
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to fetch related notes: ${response.statusText}`);
   }
   return response.json();
 }
@@ -141,4 +200,26 @@ export async function healthCheck(): Promise<{ ok: boolean }> {
     throw new Error(`Health check failed: ${response.statusText}`);
   }
   return response.json();
+}
+
+/**
+ * Get file directory tree
+ */
+export async function getFileTree(): Promise<FileTreeNode> {
+  const response = await fetch(`${API_BASE}/files/tree`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file tree: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get raw markdown file content from disk
+ */
+export async function getFileContent(filePath: string): Promise<string> {
+  const response = await fetch(`${API_BASE}/files/content?file_path=${encodeURIComponent(filePath)}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file content: ${response.statusText}`);
+  }
+  return response.text();
 }
