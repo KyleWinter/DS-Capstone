@@ -51,6 +51,14 @@ export interface ClusterDetail {
   members: ChunkHit[];
 }
 
+export interface FileTreeNode {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  children?: FileTreeNode[];
+  chunk_ids?: number[];
+}
+
 /**
  * Search for chunks using FTS (Full-Text Search)
  */
@@ -69,6 +77,17 @@ export async function getChunk(chunkId: number): Promise<ChunkDetail> {
   const response = await fetch(`${API_BASE}/chunks/${chunkId}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch chunk: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get all chunks for a specific file
+ */
+export async function getFileChunks(filePath: string): Promise<ChunkDetail[]> {
+  const response = await fetch(`${API_BASE}/files/chunks?file_path=${encodeURIComponent(filePath)}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file chunks: ${response.statusText}`);
   }
   return response.json();
 }
@@ -141,4 +160,26 @@ export async function healthCheck(): Promise<{ ok: boolean }> {
     throw new Error(`Health check failed: ${response.statusText}`);
   }
   return response.json();
+}
+
+/**
+ * Get file directory tree
+ */
+export async function getFileTree(): Promise<FileTreeNode> {
+  const response = await fetch(`${API_BASE}/files/tree`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file tree: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get raw markdown file content from disk
+ */
+export async function getFileContent(filePath: string): Promise<string> {
+  const response = await fetch(`${API_BASE}/files/content?file_path=${encodeURIComponent(filePath)}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file content: ${response.statusText}`);
+  }
+  return response.text();
 }

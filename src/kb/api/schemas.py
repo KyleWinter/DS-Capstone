@@ -52,3 +52,14 @@ class ClusterListItemOut(BaseModel):
 class ClusterDetailOut(BaseModel):
     meta: ClusterMetaOut
     members: List[ChunkHitOut] = Field(default_factory=list)
+
+
+class FileTreeNode(BaseModel):
+    """Represents a node in the file directory tree."""
+    name: str
+    path: str
+    type: str  # "file" or "directory"
+    children: Optional[List[FileTreeNode]] = None
+    chunk_ids: Optional[List[int]] = None  # chunk IDs for files
+
+FileTreeNode.model_rebuild()  # For self-referencing model

@@ -103,3 +103,38 @@ body {
 .prose-invert li {
   @apply my-2;
 }
+
+/* Chunk highlight animation */
+.highlight-chunk {
+  animation: highlight-pulse 2s ease-out;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    background-color: rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    background-color: rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 20px 5px rgba(59, 130, 246, 0.2);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.chunk-section {
+  border-radius: 8px;
+  padding: 1rem;
+  margin-left: -1rem;
+  margin-right: -1rem;
+}
+
+.chunk-anchor {
+  position: relative;
+  scroll-margin-top: 4rem;
+  display: block;
+  height: 0;
+  visibility: hidden;
+}
