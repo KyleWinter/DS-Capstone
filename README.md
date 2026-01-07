@@ -81,3 +81,9 @@ pip install uvicorn fastapi
 uvicorn src.kb.api.app:app --reload --port 8000
 
 pip install sentence-transformers torch
+
+
+python scripts/build_index.py 
+python scripts/build_embeddings.py 
+python scripts/build_clusters.py 
+python scripts/verify_db.py
