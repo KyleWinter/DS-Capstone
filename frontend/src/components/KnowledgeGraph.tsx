@@ -49,6 +49,14 @@ export function KnowledgeGraph({ filePath, chunkId, onNodeClick, onClose }: Know
   // Load graph data
   useEffect(() => {
     async function loadGraphData() {
+      // Don't load if filePath or chunkId is invalid
+      if (!filePath || !chunkId || chunkId === 0) {
+        setIsLoading(false);
+        setNodes([]);
+        setEdges([]);
+        return;
+      }
+
       try {
         setIsLoading(true);
 

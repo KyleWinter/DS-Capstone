@@ -79,6 +79,19 @@ export interface FileTreeNode {
   chunk_ids?: number[];
 }
 
+export interface ModuleListItem {
+  id: number;
+  name: string;
+  description: string;
+  file_count: number;
+}
+
+export interface NoteItem {
+  file_path: string;
+  title: string;
+  preview: string;
+}
+
 /**
  * Search for chunks using FTS (Full-Text Search)
  */
@@ -105,6 +118,9 @@ export async function getChunk(chunkId: number): Promise<ChunkDetail> {
  * Get all chunks for a specific file
  */
 export async function getFileChunks(filePath: string): Promise<ChunkDetail[]> {
+  if (!filePath || filePath.trim() === '') {
+    throw new Error('File path is required');
+  }
   const response = await fetch(`${API_BASE}/files/chunks?file_path=${encodeURIComponent(filePath)}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch file chunks: ${response.statusText}`);
@@ -217,9 +233,34 @@ export async function getFileTree(): Promise<FileTreeNode> {
  * Get raw markdown file content from disk
  */
 export async function getFileContent(filePath: string): Promise<string> {
+  if (!filePath || filePath.trim() === '') {
+    throw new Error('File path is required');
+  }
   const response = await fetch(`${API_BASE}/files/content?file_path=${encodeURIComponent(filePath)}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch file content: ${response.statusText}`);
   }
   return response.text();
+}
+
+/**
+ * Get list of all modules
+ */
+export async function listModules(limit: number = 50, offset: number = 0): Promise<ModuleListItem[]> {
+  const response = await fetch(`${API_BASE}/modules?limit=${limit}&offset=${offset}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch modules: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+/**
+ * Get notes in a specific module
+ */
+export async function getModuleNotes(moduleId: number, limit: number = 200, offset: number = 0): Promise<NoteItem[]> {
+  const response = await fetch(`${API_BASE}/modules/${moduleId}/notes?limit=${limit}&offset=${offset}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch module notes: ${response.statusText}`);
+  }
+  return response.json();
 }

@@ -10,16 +10,19 @@ import {
   ChevronRight,
   FolderTree,
   Network,
+  Layers,
+  ArrowLeft,
 } from "lucide-react";
 import { FileTree } from "@/components/FileTree";
 import { FileDirectoryTree } from "@/components/FileDirectoryTree";
+import { ModuleTree } from "@/components/ModuleTree";
 import { SuggestionPanel } from "@/components/SuggestionPanel";
 import { CommandPalette } from "@/components/CommandPalette";
 import { RelatedNotes } from "@/components/RelatedNotes";
 import { KnowledgeGraph } from "@/components/KnowledgeGraph";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import { TreeNode } from "@/lib/mockData";
-import { listClusters, getChunk, getClusterDetail, ChunkDetail, getFileTree, FileTreeNode, getFileChunks, getFileContent } from "@/lib/api";
+import { listClusters, getChunk, getClusterDetail, ChunkDetail, getFileTree, FileTreeNode, getFileChunks, getFileContent, listModules, ModuleListItem } from "@/lib/api";
 import { buildClusterTree, pathToBreadcrumbs, chunksToTreeNodes } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -36,30 +39,44 @@ export default function DashboardPage() {
   const [displayMode, setDisplayMode] = useState<'single' | 'file'>('single');
   const [clusterTree, setClusterTree] = useState<TreeNode | null>(null);
   const [fileTree, setFileTree] = useState<FileTreeNode | null>(null);
+  const [modules, setModules] = useState<ModuleListItem[]>([]);
   const [breadcrumbs, setBreadcrumbs] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'clusters' | 'files'>('clusters');
+  const [viewMode, setViewMode] = useState<'clusters' | 'files' | 'modules'>('clusters');
   const [activeFilePath, setActiveFilePath] = useState<string>("");
+
+  // Navigation history for back button
+  interface HistoryEntry {
+    type: 'chunk' | 'file' | 'file-scroll';
+    chunkId?: number;
+    filePath?: string;
+    displayMode: 'single' | 'file';
+    scrollToChunkId?: number; // For file-scroll type: which chunk to scroll to
+  }
+  const [navigationHistory, setNavigationHistory] = useState<HistoryEntry[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Resizable panel widths
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(288); // 72 * 4 = 288px (w-72)
   const [rightSidebarWidth, setRightSidebarWidth] = useState(320); // 80 * 4 = 320px (w-80)
 
-  // Load clusters and file tree on mount
+  // Load clusters, file tree, and modules on mount
   useEffect(() => {
     async function loadData() {
       try {
         setIsLoading(true);
 
-        // Load both clusters and file tree in parallel
-        const [clusters, fileTreeData] = await Promise.all([
+        // Load clusters, file tree, and modules in parallel
+        const [clusters, fileTreeData, modulesData] = await Promise.all([
           listClusters(100),
-          getFileTree()
+          getFileTree(),
+          listModules(100)
         ]);
 
         const tree = buildClusterTree(clusters);
         setClusterTree(tree);
         setFileTree(fileTreeData);
+        setModules(modulesData);
       } catch (error) {
         console.error("Failed to load data:", error);
       } finally {
@@ -112,14 +129,37 @@ export default function DashboardPage() {
     }
   };
 
-  const handleChunkSelect = async (chunkId: number) => {
+  const addToHistory = (entry: HistoryEntry) => {
+    setNavigationHistory((prev) => {
+      // Remove any forward history when navigating to a new location
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(entry);
+      // Keep max 50 entries
+      if (newHistory.length > 50) {
+        newHistory.shift();
+      }
+      return newHistory;
+    });
+    setHistoryIndex((prev) => Math.min(prev + 1, 49));
+  };
+
+  const handleChunkSelect = async (chunkId: number, addHistory: boolean = true) => {
     try {
       const chunk = await getChunk(chunkId);
       setActiveChunk(chunk);
       setActiveChunks([]);
       setActiveFileContent("");
       setDisplayMode('single');
+      setActiveFilePath(chunk.file_path);
       setBreadcrumbs(pathToBreadcrumbs(chunk.file_path));
+
+      if (addHistory) {
+        addToHistory({
+          type: 'chunk',
+          chunkId,
+          displayMode: 'single',
+        });
+      }
     } catch (error) {
       console.error("Failed to load chunk:", error);
     }
@@ -136,7 +176,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleFileSelect = async (node: FileTreeNode) => {
+  const handleFileSelect = async (node: FileTreeNode, addHistory: boolean = true) => {
     if (node.type === 'file' && node.path) {
       try {
         setActiveFilePath(node.path);
@@ -154,13 +194,49 @@ export default function DashboardPage() {
         setActiveChunk(null);
         setDisplayMode('file');
         setBreadcrumbs(pathToBreadcrumbs(node.path));
+
+        if (addHistory) {
+          addToHistory({
+            type: 'file',
+            filePath: node.path,
+            displayMode: 'file',
+          });
+        }
       } catch (error) {
         console.error("Failed to load file:", error);
       }
     }
   };
 
-  const handleRelatedNoteClick = async (filePath: string) => {
+  const handleModuleFileSelect = async (filePath: string, addHistory: boolean = true) => {
+    try {
+      setActiveFilePath(filePath);
+
+      // Load both raw file content and chunks in parallel
+      const [fileContent, chunks] = await Promise.all([
+        getFileContent(filePath),
+        getFileChunks(filePath)
+      ]);
+
+      setActiveFileContent(fileContent);
+      setActiveChunks(chunks);
+      setActiveChunk(null);
+      setDisplayMode('file');
+      setBreadcrumbs(pathToBreadcrumbs(filePath));
+
+      if (addHistory) {
+        addToHistory({
+          type: 'file',
+          filePath,
+          displayMode: 'file',
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load file from module:", error);
+    }
+  };
+
+  const handleRelatedNoteClick = async (filePath: string, addHistory: boolean = true) => {
     try {
       // Load both file content and chunks in parallel
       const [fileContent, chunks] = await Promise.all([
@@ -177,11 +253,79 @@ export default function DashboardPage() {
         setDisplayMode('file');
         setBreadcrumbs(pathToBreadcrumbs(filePath));
 
+        if (addHistory) {
+          addToHistory({
+            type: 'file',
+            filePath,
+            displayMode: 'file',
+          });
+        }
+
         // Scroll to top of the page smoothly
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (error) {
       console.error("Failed to load related note:", error);
+    }
+  };
+
+  // Handle AI Suggestion clicks - unified handler for all views
+  const handleSuggestionClick = async (chunkId: number) => {
+    if (displayMode === 'file' && activeFilePath) {
+      // In file mode, scroll to the chunk in the current file
+      // But first check if the chunk belongs to the current file
+      try {
+        const chunk = await getChunk(chunkId);
+
+        if (chunk.file_path === activeFilePath) {
+          // Same file: just scroll to the chunk and record scroll history
+          scrollToChunk(chunkId);
+          addToHistory({
+            type: 'file-scroll',
+            filePath: activeFilePath,
+            displayMode: 'file',
+            scrollToChunkId: chunkId,
+          });
+        } else {
+          // Different file: load the new file
+          await handleRelatedNoteClick(chunk.file_path, true);
+          // Then scroll to the specific chunk
+          setTimeout(() => scrollToChunk(chunkId), 300);
+        }
+      } catch (error) {
+        console.error("Failed to handle suggestion click:", error);
+        // Fallback: load chunk in single mode
+        await handleChunkSelect(chunkId, true);
+      }
+    } else {
+      // In single chunk mode, load the new chunk
+      await handleChunkSelect(chunkId, true);
+    }
+  };
+
+  // Go back in navigation history
+  const handleGoBack = async () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      const entry = navigationHistory[newIndex];
+
+      setHistoryIndex(newIndex);
+
+      if (entry.type === 'chunk' && entry.chunkId) {
+        await handleChunkSelect(entry.chunkId, false);
+      } else if (entry.type === 'file' && entry.filePath) {
+        await handleRelatedNoteClick(entry.filePath, false);
+      } else if (entry.type === 'file-scroll' && entry.filePath && entry.scrollToChunkId) {
+        // For file-scroll type: load the file (if not already loaded) and scroll to position
+        if (activeFilePath !== entry.filePath || displayMode !== 'file') {
+          await handleRelatedNoteClick(entry.filePath, false);
+          // Wait for render then scroll
+          setTimeout(() => scrollToChunk(entry.scrollToChunkId!), 300);
+        } else {
+          // Already on the same file, just scroll
+          scrollToChunk(entry.scrollToChunkId);
+        }
+      }
     }
   };
 
@@ -349,7 +493,7 @@ export default function DashboardPage() {
           <div className="px-4 py-3 border-b border-zinc-800">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-semibold text-zinc-100">
-                {viewMode === 'clusters' ? 'Knowledge Graph' : 'File Explorer'}
+                {viewMode === 'clusters' ? 'Knowledge Graph' : viewMode === 'files' ? 'File Explorer' : 'Modules'}
               </h2>
               <div className="flex gap-1 bg-zinc-900 rounded-lg p-1">
                 <button
@@ -374,10 +518,21 @@ export default function DashboardPage() {
                 >
                   <FolderTree className="w-4 h-4" />
                 </button>
+                <button
+                  onClick={() => setViewMode('modules')}
+                  className={`p-1.5 rounded transition-colors ${
+                    viewMode === 'modules'
+                      ? 'bg-zinc-800 text-purple-400'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                  title="Module View"
+                >
+                  <Layers className="w-4 h-4" />
+                </button>
               </div>
             </div>
             <p className="text-xs text-zinc-500">
-              {viewMode === 'clusters' ? 'AI-Clustered Notes' : 'Directory Structure'}
+              {viewMode === 'clusters' ? 'AI-Clustered Notes' : viewMode === 'files' ? 'Directory Structure' : 'Module Classification'}
             </p>
           </div>
 
@@ -396,7 +551,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="p-4 text-center text-zinc-500 text-sm">No clusters available</div>
               )
-            ) : (
+            ) : viewMode === 'files' ? (
               fileTree ? (
                 <FileDirectoryTree
                   node={fileTree}
@@ -405,6 +560,16 @@ export default function DashboardPage() {
                 />
               ) : (
                 <div className="p-4 text-center text-zinc-500 text-sm">No files available</div>
+              )
+            ) : (
+              modules.length > 0 ? (
+                <ModuleTree
+                  modules={modules}
+                  activePath={activeFilePath}
+                  onFileSelect={handleModuleFileSelect}
+                />
+              ) : (
+                <div className="p-4 text-center text-zinc-500 text-sm">No modules available</div>
               )
             )}
           </div>
@@ -415,8 +580,20 @@ export default function DashboardPage() {
 
         {/* Center Panel - Editor/Viewer */}
         <main className="flex-1 flex flex-col overflow-hidden bg-zinc-950">
-          {/* Breadcrumbs */}
+          {/* Breadcrumbs with Back Button */}
           <div className="h-12 border-b border-zinc-800 flex items-center px-6 gap-2">
+            {/* Back Button */}
+            {historyIndex > 0 && (
+              <button
+                onClick={handleGoBack}
+                className="flex items-center gap-1.5 px-2 py-1 mr-2 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors group"
+                title="Go back to previous note"
+              >
+                <ArrowLeft className="w-4 h-4 text-zinc-400 group-hover:text-zinc-200" />
+                <span className="text-xs text-zinc-400 group-hover:text-zinc-200">Back</span>
+              </button>
+            )}
+
             {breadcrumbs.map((crumb, index) => (
               <div key={index} className="flex items-center gap-2">
                 {index > 0 && <ChevronRight className="w-4 h-4 text-zinc-600" />}
@@ -508,7 +685,7 @@ export default function DashboardPage() {
                 </ReactMarkdown>
 
                 {/* Related Notes Section */}
-                {activeChunks.length > 0 && (
+                {activeChunks.length > 0 && activeChunks[0].id && activeChunks[0].id > 0 && (
                   <RelatedNotes
                     chunkId={activeChunks[0].id}
                     onNoteClick={handleRelatedNoteClick}
@@ -529,61 +706,71 @@ export default function DashboardPage() {
         </main>
 
         {/* Right Sidebar - AI Suggestions / Knowledge Graph */}
-        {isRightSidebarOpen && (activeChunk || activeChunks.length > 0) && (
-          <>
-            {/* Right Resize Handle */}
-            <ResizeHandle onResize={handleRightSidebarResize} />
+        {isRightSidebarOpen && (activeChunk || activeChunks.length > 0) && (() => {
+          const chunkId = activeChunk?.id || (activeChunks.length > 0 ? activeChunks[0].id : 0);
+          const filePath = activeFilePath || activeChunk?.file_path || (activeChunks.length > 0 ? activeChunks[0].file_path : '');
 
-            <aside
-              className="flex flex-col"
-              style={{ width: `${rightSidebarWidth}px` }}
-            >
-            {/* Tab Switcher */}
-            <div className="h-12 border-b border-l border-zinc-800 bg-zinc-900/50 backdrop-blur-sm flex items-center px-2 gap-1">
-              <button
-                onClick={() => setRightPanelMode('suggestions')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  rightPanelMode === 'suggestions'
-                    ? 'bg-zinc-800 text-zinc-100'
-                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-                }`}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-                Suggestions
-              </button>
-              <button
-                onClick={() => setRightPanelMode('graph')}
-                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  rightPanelMode === 'graph'
-                    ? 'bg-zinc-800 text-zinc-100'
-                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
-                }`}
-              >
-                <Network className="w-3.5 h-3.5" />
-                Graph
-              </button>
-            </div>
+          // Only render if we have valid data
+          if (!chunkId || chunkId === 0) {
+            return null;
+          }
 
-            {/* Content */}
-            <div className="flex-1 overflow-hidden border-l border-zinc-800">
-              {rightPanelMode === 'suggestions' ? (
-                <SuggestionPanel
-                  chunkId={activeChunk?.id || (activeChunks.length > 0 ? activeChunks[0].id : 0)}
-                  onNoteClick={displayMode === 'file' ? scrollToChunk : handleChunkSelect}
-                />
-              ) : (
-                <KnowledgeGraph
-                  filePath={activeFilePath || (activeChunk?.file_path || (activeChunks.length > 0 ? activeChunks[0].file_path : ''))}
-                  chunkId={activeChunk?.id || (activeChunks.length > 0 ? activeChunks[0].id : 0)}
-                  onNodeClick={handleRelatedNoteClick}
-                />
-              )}
-            </div>
-          </aside>
-          </>
-        )}
+          return (
+            <>
+              {/* Right Resize Handle */}
+              <ResizeHandle onResize={handleRightSidebarResize} />
+
+              <aside
+                className="flex flex-col"
+                style={{ width: `${rightSidebarWidth}px` }}
+              >
+              {/* Tab Switcher */}
+              <div className="h-12 border-b border-l border-zinc-800 bg-zinc-900/50 backdrop-blur-sm flex items-center px-2 gap-1">
+                <button
+                  onClick={() => setRightPanelMode('suggestions')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    rightPanelMode === 'suggestions'
+                      ? 'bg-zinc-800 text-zinc-100'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                  Suggestions
+                </button>
+                <button
+                  onClick={() => setRightPanelMode('graph')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    rightPanelMode === 'graph'
+                      ? 'bg-zinc-800 text-zinc-100'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
+                  }`}
+                >
+                  <Network className="w-3.5 h-3.5" />
+                  Graph
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-hidden border-l border-zinc-800">
+                {rightPanelMode === 'suggestions' ? (
+                  <SuggestionPanel
+                    chunkId={chunkId}
+                    onNoteClick={handleSuggestionClick}
+                  />
+                ) : (
+                  <KnowledgeGraph
+                    filePath={filePath}
+                    chunkId={chunkId}
+                    onNodeClick={handleRelatedNoteClick}
+                  />
+                )}
+              </div>
+            </aside>
+            </>
+          );
+        })()}
       </div>
 
       {/* Command Palette */}

@@ -16,6 +16,13 @@ export function RelatedNotes({ chunkId, onNoteClick }: RelatedNotesProps) {
 
   useEffect(() => {
     async function loadRelatedNotes() {
+      // Don't load if chunkId is invalid
+      if (!chunkId || chunkId === 0) {
+        setIsLoading(false);
+        setRelatedNotes([]);
+        return;
+      }
+
       try {
         setIsLoading(true);
         const response = await getRelatedNotes(chunkId, mode, 5);

@@ -16,6 +16,13 @@ export function SuggestionPanel({ chunkId, onNoteClick }: SuggestionPanelProps) 
 
   useEffect(() => {
     async function loadRelatedItems() {
+      // Don't load if chunkId is invalid
+      if (!chunkId || chunkId === 0) {
+        setIsLoading(false);
+        setRelatedNotes([]);
+        return;
+      }
+
       try {
         setIsLoading(true);
         const items = await getRelatedChunks(chunkId, mode, 10);
