@@ -79,3 +79,5 @@ python scripts/build_embeddings.py --batch 64
 To start：
 pip install uvicorn fastapi
 uvicorn src.kb.api.app:app --reload --port 8000
+
+pip install sentence-transformers torch
