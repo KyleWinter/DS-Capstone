@@ -4,13 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update api for module classification">
+    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update search">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/api/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/api/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/search/hybrid.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/hybrid.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/search/lexical.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/lexical.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/search/semantic.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/semantic.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/search/text_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/text_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/cluster/graph.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -178,8 +174,8 @@
         <item itemvalue="Python 测试.Python 测试 (test_full_flow_print.py 内)" />
         <item itemvalue="Python 测试.Python 测试 (test_search_print.py 内)" />
         <item itemvalue="Python.smoke_api" />
-        <item itemvalue="Python.demo_cli" />
         <item itemvalue="Python.stats" />
+        <item itemvalue="Python.demo_cli" />
       </list>
     </recent_temporary>
   </component>
@@ -366,7 +362,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767782143749</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="update search">
+      <option name="closed" value="true" />
+      <created>1767854555991</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1767854555991</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -386,7 +390,8 @@
     <MESSAGE value="update chunker and database" />
     <MESSAGE value="update embeddings and database" />
     <MESSAGE value="update api for module classification" />
-    <option name="LAST_COMMIT_MESSAGE" value="update api for module classification" />
+    <MESSAGE value="update search" />
+    <option name="LAST_COMMIT_MESSAGE" value="update search" />
     <option name="GROUP_MULTIFILE_MERGE_BY_DIRECTORY" value="true" />
   </component>
 </project>
