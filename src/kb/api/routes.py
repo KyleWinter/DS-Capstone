@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Literal, List
 from .schemas import ModuleOut, NoteItemOut, NoteDetailOut, ChunkOut
+from src.kb.search.hybrid import hybrid_search
 
 from src.kb.store.db import get_conn, init_db
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -36,6 +37,7 @@ from .schemas import (
     RelatedNoteOut,
     RelatedNotesResponse,
 )
+from ..search.semantic import semantic_rerank
 
 router = APIRouter()
 
@@ -67,29 +69,84 @@ def health() -> dict:
 
 @router.get("/search", response_model=SearchResponse)
 def api_search(
-    q: str = Query(..., min_length=1, description="FTS query string"),
+    q: str = Query(..., min_length=1),
+    mode: Literal["lexical", "semantic", "hybrid"] = Query("hybrid"),
     limit: int = Query(10, ge=1, le=100),
+    fts_k: int = Query(200, ge=10, le=1000),
+    module_id: int | None = Query(None),
     conn: sqlite3.Connection = Depends(get_db),
 ) -> SearchResponse:
     """
-    Scalable lexical search using FTS (grep-style).
-    Semantic search is intentionally NOT used here.
+    Unified search endpoint:
+    - lexical: pure FTS (grep-style)
+    - semantic: embedding similarity (slow, precise)
+    - hybrid: FTS → semantic rerank (default, scalable)
     """
-    hits = fts_search(conn, q, limit=limit)
+
+    if mode == "lexical":
+        hits = fts_search(conn, q, limit=limit)
+        items = [
+            ChunkHitOut(
+                chunk_id=h.chunk_id,
+                file_path=h.file_path,
+                heading=h.heading or "",
+                preview=(h.preview or "").replace("\n", " "),
+                lexical_score=1.0,
+            )
+            for h in hits
+        ]
+        return SearchResponse(mode="lexical", total=None, items=items)
+
+    if mode == "semantic":
+        # semantic 不能全库跑，必须先有候选
+        # 这里复用 FTS 做候选是现实选择
+        lexical_hits = fts_search(conn, q, limit=fts_k)
+        candidate_ids = [h.chunk_id for h in lexical_hits]
+
+        reranked = semantic_rerank(conn, q, candidate_ids)
+        items = []
+        by_id = {h.chunk_id: h for h in lexical_hits}
+
+        for s in reranked[:limit]:
+            l = by_id.get(s.chunk_id)
+            if not l:
+                continue
+            items.append(
+                ChunkHitOut(
+                    chunk_id=s.chunk_id,
+                    file_path=l.file_path,
+                    heading=l.heading or "",
+                    preview=l.preview,
+                    semantic_score=s.score,
+                    score=s.score,
+                )
+            )
+
+        return SearchResponse(mode="semantic", total=None, items=items)
+
+    # ---------- hybrid（默认） ----------
+    hits = hybrid_search(
+        conn,
+        q,
+        fts_k=fts_k,
+        top_k=limit,
+        module_id=module_id,
+    )
+
     items = [
         ChunkHitOut(
             chunk_id=h.chunk_id,
             file_path=h.file_path,
-            heading=getattr(h, "heading", "") or "",
-            preview=(h.preview or "").replace("\n", " "),
+            heading=h.heading,
+            preview=h.preview,
+            score=h.score,
+            semantic_score=h.semantic_score,
+            lexical_score=h.lexical_score,
         )
         for h in hits
     ]
-    return SearchResponse(
-        mode="lexical",
-        total=None,
-        items=items,
-    )
+
+    return SearchResponse(mode="hybrid", total=None, items=items)
 
 
 # -------------------------

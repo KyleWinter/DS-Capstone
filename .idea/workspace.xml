@@ -4,16 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update embeddings and database">
-      <change afterPath="$PROJECT_DIR$/scripts/build_modules.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/inspect_modules.py" afterDir="false" />
+    <list default="true" id="c3b9352d-5c86-48d3-8753-f21cec69678e" name="更改" comment="update api for module classification">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/kb/api/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/api/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/api/schemas.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/api/schemas.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/embed/openai_embed.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/embed/openai_embed.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/kb/store/schema.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/store/schema.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/search/hybrid.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/hybrid.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/search/lexical.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/lexical.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/search/semantic.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/semantic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/kb/search/text_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/kb/search/text_utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,6 +39,9 @@
     "accountId": "e225878a-177b-41c3-90df-8e7bd12ba92b"
   }
 }]]></component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/src/kb/search/text_utils.py" root0="FORCE_HIGHLIGHTING" />
+  </component>
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 5
 }]]></component>
@@ -358,7 +358,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767777728437</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="update api for module classification">
+      <option name="closed" value="true" />
+      <created>1767782143749</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1767782143749</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -377,6 +385,8 @@
     <MESSAGE value="update database" />
     <MESSAGE value="update chunker and database" />
     <MESSAGE value="update embeddings and database" />
-    <option name="LAST_COMMIT_MESSAGE" value="update embeddings and database" />
+    <MESSAGE value="update api for module classification" />
+    <option name="LAST_COMMIT_MESSAGE" value="update api for module classification" />
+    <option name="GROUP_MULTIFILE_MERGE_BY_DIRECTORY" value="true" />
   </component>
 </project>
