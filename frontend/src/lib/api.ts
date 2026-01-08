@@ -7,6 +7,9 @@ export interface ChunkHit {
   file_path: string;
   heading: string;
   preview: string;
+  score?: number;
+  lexical_score?: number;
+  semantic_score?: number;
 }
 
 export interface ChunkDetail {
@@ -40,7 +43,7 @@ export interface RelatedNotesResponse {
 }
 
 export interface SearchResponse {
-  mode: 'lexical' | 'semantic';
+  mode: 'lexical' | 'semantic' | 'hybrid';
   total: number | null;
   items: ChunkHit[];
 }
@@ -93,10 +96,42 @@ export interface NoteItem {
 }
 
 /**
- * Search for chunks using FTS (Full-Text Search)
+ * Search for chunks
+ * @param query - Search query string
+ * @param options - Search options
+ * @param options.mode - Search mode: 'lexical' (FTS), 'semantic' (embedding similarity), or 'hybrid' (default)
+ * @param options.limit - Maximum number of results to return
+ * @param options.fts_k - Number of FTS candidates for semantic/hybrid modes (default 200)
+ * @param options.module_id - Optional module ID to filter results
  */
-export async function searchChunks(query: string, limit: number = 10): Promise<SearchResponse> {
-  const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+export async function searchChunks(
+  query: string,
+  options: {
+    mode?: 'lexical' | 'semantic' | 'hybrid';
+    limit?: number;
+    fts_k?: number;
+    module_id?: number;
+  } = {}
+): Promise<SearchResponse> {
+  const {
+    mode = 'hybrid',
+    limit = 10,
+    fts_k = 200,
+    module_id
+  } = options;
+
+  const params = new URLSearchParams({
+    q: query,
+    mode,
+    limit: limit.toString(),
+    fts_k: fts_k.toString(),
+  });
+
+  if (module_id !== undefined) {
+    params.append('module_id', module_id.toString());
+  }
+
+  const response = await fetch(`${API_BASE}/search?${params.toString()}`);
   if (!response.ok) {
     throw new Error(`Search failed: ${response.statusText}`);
   }

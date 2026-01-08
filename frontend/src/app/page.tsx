@@ -129,6 +129,56 @@ export default function DashboardPage() {
     }
   };
 
+  // Handle cluster selection from search results
+  const handleClusterSelect = async (clusterId: number) => {
+    console.log('handleClusterSelect called with clusterId:', clusterId);
+
+    // Validate clusterId
+    if (!clusterId || clusterId === 0) {
+      console.error('Invalid clusterId provided to handleClusterSelect:', clusterId);
+      return;
+    }
+
+    try {
+      // Switch to clusters view if not already there
+      if (viewMode !== 'clusters') {
+        setViewMode('clusters');
+      }
+
+      // Load cluster details
+      const clusterDetail = await getClusterDetail(clusterId, 50);
+      const memberNodes = chunksToTreeNodes(clusterDetail.members);
+
+      // Update the tree to expand this cluster
+      setClusterTree((prevTree) => {
+        if (!prevTree) return prevTree;
+
+        const updateNode = (n: TreeNode): TreeNode => {
+          if (n.id === `cluster-${clusterId}`) {
+            return { ...n, children: memberNodes };
+          }
+          if (n.children) {
+            return { ...n, children: n.children.map(updateNode) };
+          }
+          return n;
+        };
+
+        return updateNode(prevTree);
+      });
+
+      // Select and display the first chunk in the cluster
+      if (clusterDetail.members.length > 0) {
+        const firstChunk = clusterDetail.members[0];
+        await handleChunkSelect(firstChunk.chunk_id);
+      }
+
+      // Update breadcrumbs
+      setBreadcrumbs([clusterDetail.meta.name || `Cluster ${clusterId}`]);
+    } catch (error) {
+      console.error("Failed to handle cluster selection:", error);
+    }
+  };
+
   const addToHistory = (entry: HistoryEntry) => {
     setNavigationHistory((prev) => {
       // Remove any forward history when navigating to a new location
@@ -408,6 +458,47 @@ export default function DashboardPage() {
       }
     } else {
       console.warn(`Chunk anchor not found for chunk_id: ${chunkId}`);
+    }
+  };
+
+  // Handle search result selection: load full file and scroll to chunk
+  const handleSearchResultSelect = async (filePath: string, chunkId: number) => {
+    console.log('handleSearchResultSelect called with filePath:', filePath, 'chunkId:', chunkId);
+
+    // Validate parameters
+    if (!filePath || typeof filePath !== 'string' || filePath.trim() === '') {
+      console.error('Invalid filePath provided to handleSearchResultSelect:', filePath);
+      return;
+    }
+    if (!chunkId || chunkId === 0) {
+      console.error('Invalid chunkId provided to handleSearchResultSelect:', chunkId);
+      return;
+    }
+
+    try {
+      // Load the complete file
+      await handleRelatedNoteClick(filePath, true);
+
+      // Wait for the DOM to update, then scroll to the chunk
+      setTimeout(() => {
+        scrollToChunk(chunkId);
+
+        // Add history entry for the scroll position
+        addToHistory({
+          type: 'file-scroll',
+          filePath: filePath,
+          displayMode: 'file',
+          scrollToChunkId: chunkId,
+        });
+      }, 300);
+    } catch (error) {
+      console.error("Failed to handle search result selection:", error);
+      // Fallback: try to load just the chunk
+      try {
+        await handleChunkSelect(chunkId, true);
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+      }
     }
   };
 
@@ -842,6 +933,8 @@ export default function DashboardPage() {
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
         onChunkSelect={handleChunkSelect}
+        onFileChunkSelect={handleSearchResultSelect}
+        onClusterSelect={handleClusterSelect}
       />
     </div>
   );

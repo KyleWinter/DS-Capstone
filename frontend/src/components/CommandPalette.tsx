@@ -1,32 +1,33 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Search, Sparkles, Hash, FileText, Clock } from "lucide-react";
-import { searchChunks, suggestClusters, ChunkHit, ClusterSuggestion } from "@/lib/api";
+import { Search, Clock, File, Zap, Hash } from "lucide-react";
+import { searchChunks } from "@/lib/api";
 
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   onChunkSelect?: (chunkId: number) => void;
+  onFileChunkSelect?: (filePath: string, chunkId: number) => void;
+  onClusterSelect?: (clusterId: number) => void;
 }
-
-type SearchMode = "semantic" | "keyword";
 
 interface SearchResult {
   id: string;
   title: string;
   path: string;
   preview: string;
-  type: "note" | "cluster";
-  relevance?: number;
-  chunkId?: number;
-  clusterId?: number;
+  type: "note";
+  score?: number;
+  lexical_score?: number;
+  semantic_score?: number;
+  chunkId: number;
+  matchSources: ('lexical' | 'semantic')[]; // Track which searches found this result
 }
 
 const recentSearches = ["transformer", "链表", "attention mechanism"];
 
-export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPaletteProps) {
-  const [searchMode, setSearchMode] = useState<SearchMode>("keyword");
+export function CommandPalette({ isOpen, onClose, onChunkSelect, onFileChunkSelect, onClusterSelect }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -68,32 +69,74 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
       const timer = setTimeout(async () => {
         setIsLoading(true);
         try {
-          if (searchMode === "keyword") {
-            // Use FTS search for keyword mode
-            const response = await searchChunks(query, 10);
-            const mappedResults: SearchResult[] = response.items.map((chunk) => ({
+          // Call both lexical and semantic searches in parallel
+          const [lexicalResponse, semanticResponse] = await Promise.all([
+            searchChunks(query, { mode: 'lexical', limit: 10, fts_k: 200 }),
+            searchChunks(query, { mode: 'semantic', limit: 10, fts_k: 200 }).catch(() => ({ mode: 'semantic' as const, total: null, items: [] }))
+          ]);
+
+          // Merge results by chunk_id
+          const resultMap = new Map<number, SearchResult>();
+
+          // Process lexical results
+          lexicalResponse.items.forEach((chunk) => {
+            const fileName = chunk.file_path.split('/').pop() || 'Untitled';
+            const chunkTitle = chunk.heading || 'Untitled Section';
+            resultMap.set(chunk.chunk_id, {
               id: `chunk-${chunk.chunk_id}`,
-              title: chunk.heading || chunk.file_path.split('/').pop() || 'Untitled',
+              title: `${fileName} > ${chunkTitle}`,
               path: chunk.file_path,
               preview: chunk.preview,
               type: "note" as const,
+              score: chunk.score,
+              lexical_score: chunk.lexical_score,
+              semantic_score: chunk.semantic_score,
               chunkId: chunk.chunk_id,
-            }));
-            setResults(mappedResults);
-          } else {
-            // Use cluster suggestions for semantic mode
-            const clusters = await suggestClusters(query, 10);
-            const mappedResults: SearchResult[] = clusters.map((cluster) => ({
-              id: `cluster-${cluster.cluster_id}`,
-              title: cluster.name || `Cluster ${cluster.cluster_id}`,
-              path: `Cluster #${cluster.cluster_id}`,
-              preview: `Relevance score: ${(cluster.score * 100).toFixed(1)}%`,
-              type: "cluster" as const,
-              relevance: cluster.score,
-              clusterId: cluster.cluster_id,
-            }));
-            setResults(mappedResults);
-          }
+              matchSources: ['lexical'],
+            });
+          });
+
+          // Process semantic results and merge
+          semanticResponse.items.forEach((chunk) => {
+            const existing = resultMap.get(chunk.chunk_id);
+            if (existing) {
+              // This chunk appears in both results - mark as hybrid
+              existing.matchSources.push('semantic');
+              // Update semantic score if available
+              if (chunk.semantic_score !== undefined) {
+                existing.semantic_score = chunk.semantic_score;
+              }
+              // Use the higher overall score
+              if (chunk.score !== undefined && (existing.score === undefined || chunk.score > existing.score)) {
+                existing.score = chunk.score;
+              }
+            } else {
+              // Only in semantic results
+              const fileName = chunk.file_path.split('/').pop() || 'Untitled';
+              const chunkTitle = chunk.heading || 'Untitled Section';
+              resultMap.set(chunk.chunk_id, {
+                id: `chunk-${chunk.chunk_id}`,
+                title: `${fileName} > ${chunkTitle}`,
+                path: chunk.file_path,
+                preview: chunk.preview,
+                type: "note" as const,
+                score: chunk.score,
+                lexical_score: chunk.lexical_score,
+                semantic_score: chunk.semantic_score,
+                chunkId: chunk.chunk_id,
+                matchSources: ['semantic'],
+              });
+            }
+          });
+
+          // Convert map to array and sort by score
+          const mergedResults = Array.from(resultMap.values()).sort((a, b) => {
+            const scoreA = a.score ?? 0;
+            const scoreB = b.score ?? 0;
+            return scoreB - scoreA;
+          });
+
+          setResults(mergedResults);
         } catch (error) {
           console.error("Search failed:", error);
           setResults([]);
@@ -105,11 +148,17 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
     } else {
       setResults([]);
     }
-  }, [query, searchMode]);
+  }, [query]);
 
   const handleSelectResult = (result: SearchResult) => {
-    if (result.chunkId && onChunkSelect) {
-      onChunkSelect(result.chunkId);
+    if (result.chunkId && result.path) {
+      // Load the full file and scroll to the chunk
+      if (onFileChunkSelect) {
+        onFileChunkSelect(result.path, result.chunkId);
+      } else if (onChunkSelect) {
+        // Fallback to single chunk view
+        onChunkSelect(result.chunkId);
+      }
     } else {
       console.log("Selected:", result);
     }
@@ -125,30 +174,15 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
 
       {/* Modal */}
       <div className="relative w-full max-w-2xl bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden">
-        {/* Search Mode Tabs */}
-        <div className="flex border-b border-zinc-800 bg-zinc-950">
-          <button
-            className={`
-              flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative
-              ${searchMode === "semantic" ? "text-blue-400 bg-zinc-900" : "text-zinc-500 hover:text-zinc-300"}
-            `}
-            onClick={() => setSearchMode("semantic")}
-          >
-            <Sparkles className="w-4 h-4" />
-            Semantic Search
-            {searchMode === "semantic" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />}
-          </button>
-          <button
-            className={`
-              flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative
-              ${searchMode === "keyword" ? "text-blue-400 bg-zinc-900" : "text-zinc-500 hover:text-zinc-300"}
-            `}
-            onClick={() => setSearchMode("keyword")}
-          >
-            <Hash className="w-4 h-4" />
-            Keyword Search
-            {searchMode === "keyword" && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />}
-          </button>
+        {/* Header */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800 bg-zinc-950">
+          <div className="flex items-center gap-1.5">
+            <Hash className="w-4 h-4 text-amber-400" />
+            <Zap className="w-4 h-4 text-purple-400" />
+          </div>
+          <span className="text-sm font-medium text-zinc-300">Dual Search</span>
+          <span className="text-xs text-zinc-600">·</span>
+          <span className="text-xs text-zinc-500">Keyword + Semantic</span>
         </div>
 
         {/* Search Input */}
@@ -157,11 +191,7 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
           <input
             ref={inputRef}
             type="text"
-            placeholder={
-              searchMode === "semantic"
-                ? "Search by meaning... (e.g., 'how does attention work?')"
-                : "Search by keywords... (e.g., 'transformer attention')"
-            }
+            placeholder="Search your knowledge base..."
             className="flex-1 bg-transparent text-zinc-100 placeholder:text-zinc-600 outline-none text-sm"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -178,30 +208,69 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
               <div className="p-8 text-center text-zinc-500 text-sm">Searching...</div>
             ) : results.length > 0 ? (
               <div className="p-2">
-                {results.map((result, index) => (
-                  <div
-                    key={result.id}
-                    className={`
-                      flex items-start gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors
-                      ${index === selectedIndex ? "bg-zinc-800" : "hover:bg-zinc-800/50"}
-                    `}
-                    onClick={() => handleSelectResult(result)}
-                  >
-                    <FileText className="w-4 h-4 text-zinc-500 mt-1 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <h3 className="text-sm font-medium text-zinc-200 truncate">{result.title}</h3>
-                        {result.relevance && (
-                          <span className="text-xs text-blue-400 font-medium">
-                            {Math.round(result.relevance * 100)}%
-                          </span>
-                        )}
+                {results.map((result, index) => {
+                  // Determine match type based on which searches found this result
+                  const hasLexical = result.matchSources.includes('lexical');
+                  const hasSemantic = result.matchSources.includes('semantic');
+                  const isHybrid = hasLexical && hasSemantic;
+
+                  return (
+                    <div
+                      key={result.id}
+                      className={`
+                        flex items-start gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors
+                        ${index === selectedIndex ? "bg-zinc-800" : "hover:bg-zinc-800/50"}
+                      `}
+                      onClick={() => handleSelectResult(result)}
+                    >
+                      <File className="w-4 h-4 text-blue-400 mt-1 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <h3 className="text-sm font-medium text-zinc-200 truncate">{result.title}</h3>
+                          <div className="flex items-center gap-2">
+                            {result.score !== undefined && (
+                              <span className="text-xs text-blue-400 font-medium">
+                                {(result.score * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="text-xs text-zinc-500 truncate">{result.path}</span>
+                          <span className="text-xs text-zinc-700">•</span>
+                          <div className="flex items-center gap-1.5">
+                            {isHybrid ? (
+                              // Show both tags for hybrid matches
+                              <>
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 text-xs text-amber-400 bg-amber-400/10 rounded">
+                                  <Hash className="w-3 h-3" />
+                                  Keyword
+                                </span>
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 text-xs text-purple-400 bg-purple-400/10 rounded">
+                                  <Zap className="w-3 h-3" />
+                                  Semantic
+                                </span>
+                              </>
+                            ) : hasLexical ? (
+                              // Only keyword match
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 text-xs text-amber-400 bg-amber-400/10 rounded">
+                                <Hash className="w-3 h-3" />
+                                Keyword
+                              </span>
+                            ) : (
+                              // Only semantic match
+                              <span className="flex items-center gap-1 px-1.5 py-0.5 text-xs text-purple-400 bg-purple-400/10 rounded">
+                                <Zap className="w-3 h-3" />
+                                Semantic
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs text-zinc-600 line-clamp-2">{result.preview}</p>
                       </div>
-                      <p className="text-xs text-zinc-500 mb-1">{result.path}</p>
-                      <p className="text-xs text-zinc-600 line-clamp-1">{result.preview}</p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="p-8 text-center text-zinc-500 text-sm">No results found</div>
@@ -241,10 +310,11 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
                 <span className="ml-2">Select</span>
               </span>
             </div>
-            <span>
-              Powered by{" "}
-              <span className="text-blue-400 font-medium">{searchMode === "semantic" ? "AI" : "FTS5"}</span>
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-amber-400 font-medium">FTS5</span>
+              <span>+</span>
+              <span className="text-purple-400 font-medium">AI</span>
+            </div>
           </div>
         </div>
       </div>
