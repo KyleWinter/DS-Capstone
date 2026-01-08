@@ -1,6 +1,6 @@
 # 开发进度文档
 
-**最后更新时间**: 2026-01-07
+**最后更新时间**: 2026-01-07 (晚间更新)
 
 本文档记录了智能知识库系统的详细开发进度、技术实现和待办任务，供下次开发时参考。
 
@@ -77,6 +77,9 @@
 - [x] 聚类端点
   - `GET /api/clusters` - 列出所有聚类
   - `GET /api/clusters/{cluster_id}` - 聚类详情
+- [x] 模块端点 ⭐ NEW (2026-01-07 晚)
+  - `GET /api/modules` - 列出所有模块
+  - `GET /api/modules/{module_id}/notes` - 获取模块中的笔记
 
 ### ✅ 前端功能 (已完成)
 
@@ -109,6 +112,11 @@
   - 文件系统树状视图
   - 目录/文件图标区分
   - 递归渲染子目录
+- [x] **ModuleTree** (`frontend/src/components/ModuleTree.tsx`) ⭐ NEW (2026-01-07)
+  - 模块分类树状视图
+  - 懒加载模块笔记
+  - 显示模块描述和文件数量
+  - 点击文件加载内容
 
 #### 4. Markdown 渲染
 - [x] **react-markdown** 集成
@@ -139,6 +147,11 @@
   - 显示匹配分数和预览
   - 支持模式切换（cluster/embed）
   - 点击跳转到对应 chunk
+  - **改进的加载状态** ⭐ NEW (2026-01-07 晚)
+    - 加载中：黄色脉冲图标 + 旋转动画 + "Loading..." 提示
+    - 加载完成：绿色圆点 + "{数量} found" 提示
+    - 无数据：友好的空状态提示
+    - 加载时禁用模式切换按钮
 - [x] **RelatedNotes** (`frontend/src/components/RelatedNotes.tsx`)
   - Note 级别推荐（文件级别）
   - 显示在文件展示页面底部
@@ -169,8 +182,13 @@
     - 图例面板（说明节点含义）
     - 模式切换按钮
     - 全屏切换按钮
+  - **改进的加载状态** ⭐ NEW (2026-01-07 晚)
+    - 加载中：双层旋转环 + Network 图标 + 提示文字
+    - 加载完成：绿色圆点 + "{数量} related" 提示
+    - 无数据：友好的空状态提示
+    - 加载时禁用全屏和模式切换按钮
 
-#### 8. 交互导航功能 ⭐ (2026-01-07)
+#### 8. 交互导航功能 ⭐ (2026-01-07 持续更新)
 - [x] **Chunk 内跳转**
   - 点击 SuggestionPanel 的推荐 chunk
   - 在文件模式下平滑滚动到对应位置
@@ -184,6 +202,20 @@
   - 自动加载完整文件内容
   - 更新面包屑和状态
   - 平滑滚动到顶部
+- [x] **浏览历史记录** ⭐ NEW (2026-01-07 晚)
+  - 记录所有导航操作（最多50条）
+  - Back 按钮返回上一个笔记
+  - 支持三种历史类型：
+    - chunk: 单 chunk 视图
+    - file: 完整文件视图
+    - file-scroll: 文件内滚动位置
+  - 智能恢复：自动加载文件并滚动到位置
+- [x] **智能跳转逻辑** ⭐ NEW (2026-01-07 晚)
+  - AI Suggestions 点击智能处理：
+    - 先获取 chunk 数据验证
+    - 文件模式：滚动到位置或加载新文件
+    - 单 chunk 模式：加载新 chunk
+  - 所有跳转操作自动记录历史
 
 #### 9. UI 组件库
 - [x] **ResizeHandle** (`frontend/src/components/ResizeHandle.tsx`) ⭐ NEW
@@ -533,6 +565,21 @@ frontend/
    - 影响: 跳转位置偏差
    - 修复计划: 改进匹配算法
 
+### ✅ 已修复
+
+1. **ChunkOut 缺少 file_path 字段** ✅ (2026-01-07 晚)
+   - 问题: `schemas.py` 中有重复的 `ChunkOut` 定义，第二个定义缺少 `file_path` 字段
+   - 影响: API 返回的 chunk 数据没有 file_path，导致前端跳转失败
+   - 修复: 删除重复定义，保留完整的第一个定义
+
+2. **API 传递 undefined 参数** ✅ (2026-01-07 晚)
+   - 问题: 某些状态下组件会传递空值给 API
+   - 影响: 产生 404 错误日志
+   - 修复: 添加多层防御性检查：
+     - 组件层：在 API 调用前验证参数
+     - 页面层：渲染前验证数据有效性
+     - API 层：请求前检查参数完整性
+
 ### ⚠️ 限制
 
 1. **大文件性能**
@@ -667,7 +714,68 @@ npm run dev
 
 ## 最近更新日志
 
-### 2026-01-07 - 重大更新
+### 2026-01-07 (晚间) - 功能完善与优化
+
+#### 新增功能
+1. ✅ **模块分类视图**
+   - 新增第三种视图模式（Clusters / Files / Modules）
+   - 创建 `ModuleTree` 组件
+   - 懒加载模块笔记
+   - 模块描述和文件数量显示
+   - 后端 API 支持：`/api/modules` 和 `/api/modules/{id}/notes`
+
+2. ✅ **浏览历史记录**
+   - 实现类似浏览器的后退功能
+   - 支持三种历史类型（chunk/file/file-scroll）
+   - 最多保存 50 条历史记录
+   - 智能恢复：自动加载文件并滚动到位置
+   - Back 按钮（左箭头图标）
+
+3. ✅ **改进的加载状态显示**
+   - **AI Suggestions**:
+     - 加载中：黄色脉冲图标 + 旋转加载动画
+     - 完成：绿色圆点 + "{数量} found"
+     - 空状态：友好提示 + 建议文字
+   - **Knowledge Graph**:
+     - 加载中：双层旋转环 + Network 图标
+     - 完成：绿色圆点 + "{数量} related"
+     - 空状态：友好提示
+   - 加载时禁用操作按钮
+
+4. ✅ **智能跳转逻辑完善**
+   - AI Suggestions 点击自动判断：
+     - 同文件：滚动到位置
+     - 不同文件：加载新文件
+     - 单 chunk 模式：显示 chunk
+   - 所有跳转自动记录历史
+   - 添加详细的错误处理和日志
+
+#### Bug 修复
+1. 🐛 修复后端 `ChunkOut` 重复定义导致缺少 `file_path` 字段
+2. 🐛 修复 API 传递 undefined 参数导致 404 错误
+3. 🐛 添加多层防御性参数验证
+
+#### 技术改进
+1. 🔧 创建 `ModuleTree` 组件
+2. 🔧 实现历史记录管理系统
+3. 🎨 美化加载状态 UI（动画、颜色、提示）
+4. 🛡️ 添加全面的参数验证（组件/页面/API三层）
+5. 📝 添加详细的调试日志
+6. 📚 更新 README 和 DEVELOPMENT 文档
+
+#### 文件变更
+- 新增: `frontend/src/components/ModuleTree.tsx`
+- 修改: `frontend/src/app/page.tsx` (历史记录、智能跳转、模块视图)
+- 修改: `frontend/src/components/SuggestionPanel.tsx` (加载状态、参数验证)
+- 修改: `frontend/src/components/KnowledgeGraph.tsx` (加载状态、参数验证)
+- 修改: `frontend/src/components/RelatedNotes.tsx` (参数验证)
+- 修改: `frontend/src/lib/api.ts` (新增模块 API、参数验证)
+- 修复: `src/kb/api/schemas.py` (删除重复的 ChunkOut 定义)
+- 修改: `src/kb/api/routes.py` (添加模块端点)
+- 更新: `README.md` (新功能说明)
+- 更新: `DEVELOPMENT.md` (详细文档)
+
+### 2026-01-07 (上午) - 重大更新
 
 #### 新增功能
 1. ✅ **知识关联图谱可视化**
@@ -691,14 +799,13 @@ npm run dev
 2. 🔧 创建 `ResizeHandle` 组件
 3. 🔧 创建 `KnowledgeGraph` 组件
 4. 🎨 优化锚点插入算法（三策略匹配）
-5. 📝 更新 README 和开发文档
+5. 📝 创建 DEVELOPMENT.md
 
 #### 文件变更
 - 新增: `frontend/src/components/KnowledgeGraph.tsx`
 - 新增: `frontend/src/components/ResizeHandle.tsx`
-- 修改: `frontend/src/app/page.tsx` (添加图谱集成和调整大小)
-- 更新: `frontend/package.json` (添加 reactflow)
-- 更新: `README.md`
+- 修改: `frontend/src/app/page.tsx`
+- 更新: `frontend/package.json`
 - 新增: `DEVELOPMENT.md`
 
 ---

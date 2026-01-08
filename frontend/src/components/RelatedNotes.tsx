@@ -16,6 +16,13 @@ export function RelatedNotes({ chunkId, onNoteClick }: RelatedNotesProps) {
 
   useEffect(() => {
     async function loadRelatedNotes() {
+      // Don't load if chunkId is invalid
+      if (!chunkId || chunkId === 0) {
+        setIsLoading(false);
+        setRelatedNotes([]);
+        return;
+      }
+
       try {
         setIsLoading(true);
         const response = await getRelatedNotes(chunkId, mode, 5);
@@ -86,7 +93,10 @@ export function RelatedNotes({ chunkId, onNoteClick }: RelatedNotesProps) {
         {relatedNotes.map((note, index) => (
           <div
             key={`${note.file_path}-${index}`}
-            onClick={() => onNoteClick?.(note.file_path)}
+            onClick={() => {
+              console.log('Related note clicked, filePath:', note.file_path);
+              onNoteClick?.(note.file_path);
+            }}
             className="group bg-zinc-900 border border-zinc-800 rounded-lg p-4 hover:border-zinc-700 hover:bg-zinc-900/80 transition-all cursor-pointer"
           >
             {/* Header */}

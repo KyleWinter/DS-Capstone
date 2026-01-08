@@ -16,6 +16,13 @@ export function SuggestionPanel({ chunkId, onNoteClick }: SuggestionPanelProps) 
 
   useEffect(() => {
     async function loadRelatedItems() {
+      // Don't load if chunkId is invalid
+      if (!chunkId || chunkId === 0) {
+        setIsLoading(false);
+        setRelatedNotes([]);
+        return;
+      }
+
       try {
         setIsLoading(true);
         const items = await getRelatedChunks(chunkId, mode, 10);
@@ -49,22 +56,48 @@ export function SuggestionPanel({ chunkId, onNoteClick }: SuggestionPanelProps) 
       {/* Header */}
       <div className="px-4 py-3 border-b border-zinc-800">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-purple-400" />
+          <Sparkles className={`w-5 h-5 ${isLoading ? 'text-yellow-400 animate-pulse' : 'text-purple-400'}`} />
           <h2 className="text-sm font-semibold text-zinc-100">AI Suggestions</h2>
+          {isLoading && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></div>
+              <span className="text-xs text-yellow-400">Loading...</span>
+            </div>
+          )}
+          {!isLoading && relatedNotes.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+              <span className="text-xs text-green-400">{relatedNotes.length} found</span>
+            </div>
+          )}
         </div>
-        <p className="text-xs text-zinc-500 mt-1">Based on current context</p>
+        <p className="text-xs text-zinc-500 mt-1">
+          {isLoading ? 'Analyzing current context...' : 'Based on current context'}
+        </p>
       </div>
 
       {/* Related Notes List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {isLoading ? (
-          <div className="text-center py-8 text-zinc-500 text-sm">Loading suggestions...</div>
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="relative">
+              <div className="w-12 h-12 border-4 border-zinc-800 border-t-purple-400 rounded-full animate-spin"></div>
+              <Sparkles className="w-6 h-6 text-purple-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm text-zinc-400 font-medium">Loading suggestions...</p>
+              <p className="text-xs text-zinc-600">Finding related content</p>
+            </div>
+          </div>
         ) : relatedNotes.length > 0 ? (
           relatedNotes.map((note) => (
             <div
               key={note.chunk_id}
               className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 hover:border-zinc-700 hover:bg-zinc-900/80 transition-all cursor-pointer group"
-              onClick={() => onNoteClick?.(note.chunk_id)}
+              onClick={() => {
+                console.log('Suggestion clicked, chunk_id:', note.chunk_id);
+                onNoteClick?.(note.chunk_id);
+              }}
             >
               {/* Title and Match Badge */}
               <div className="flex items-start justify-between gap-2 mb-2">
@@ -97,17 +130,26 @@ export function SuggestionPanel({ chunkId, onNoteClick }: SuggestionPanelProps) 
             </div>
           ))
         ) : (
-          <div className="text-center py-8 text-zinc-500 text-sm">No suggestions available</div>
+          <div className="flex flex-col items-center justify-center py-12 space-y-3">
+            <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-zinc-600" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-sm text-zinc-400 font-medium">No suggestions available</p>
+              <p className="text-xs text-zinc-600">Try switching to a different mode</p>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Footer */}
       <div className="px-4 py-3 border-t border-zinc-800">
         <button
-          className="w-full px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-xs font-medium text-zinc-300 transition-colors"
+          className="w-full px-3 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg text-xs font-medium text-zinc-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={() => setMode(mode === 'cluster' ? 'embed' : 'cluster')}
+          disabled={isLoading}
         >
-          Switch to {mode === 'cluster' ? 'Embedding' : 'Cluster'} Mode
+          {isLoading ? 'Loading...' : `Switch to ${mode === 'cluster' ? 'Embedding' : 'Cluster'} Mode`}
         </button>
       </div>
     </div>
