@@ -18,6 +18,11 @@ class ChunkHitOut(BaseModel):
     heading: str = ""
     preview: str = ""
 
+    # Scoring fields (optional, populated by search endpoints)
+    score: Optional[float] = None
+    lexical_score: Optional[float] = None
+    semantic_score: Optional[float] = None
+
 
 class ChunkOut(BaseModel):
     """
@@ -91,9 +96,9 @@ class RelatedNotesResponse(BaseModel):
 class SearchResponse(BaseModel):
     """
     Unified search response.
-    mode indicates whether the search is lexical (FTS) or semantic.
+    mode indicates whether the search is lexical (FTS), semantic, or hybrid.
     """
-    mode: Literal["lexical", "semantic"]
+    mode: Literal["lexical", "semantic", "hybrid"]
     total: Optional[int] = None
     items: List[ChunkHitOut]
 
