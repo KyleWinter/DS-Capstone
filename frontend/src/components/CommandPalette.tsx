@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Search, Sparkles, Hash, FileText, Clock } from "lucide-react";
+import { Search, Sparkles, Hash, FileText, Clock, File } from "lucide-react";
 import { searchChunks, suggestClusters, ChunkHit, ClusterSuggestion } from "@/lib/api";
 
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   onChunkSelect?: (chunkId: number) => void;
+  onFileChunkSelect?: (filePath: string, chunkId: number) => void;
+  onClusterSelect?: (clusterId: number) => void;
 }
 
 type SearchMode = "semantic" | "keyword";
@@ -25,7 +27,7 @@ interface SearchResult {
 
 const recentSearches = ["transformer", "链表", "attention mechanism"];
 
-export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPaletteProps) {
+export function CommandPalette({ isOpen, onClose, onChunkSelect, onFileChunkSelect, onClusterSelect }: CommandPaletteProps) {
   const [searchMode, setSearchMode] = useState<SearchMode>("keyword");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -71,14 +73,18 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
           if (searchMode === "keyword") {
             // Use FTS search for keyword mode
             const response = await searchChunks(query, 10);
-            const mappedResults: SearchResult[] = response.items.map((chunk) => ({
-              id: `chunk-${chunk.chunk_id}`,
-              title: chunk.heading || chunk.file_path.split('/').pop() || 'Untitled',
-              path: chunk.file_path,
-              preview: chunk.preview,
-              type: "note" as const,
-              chunkId: chunk.chunk_id,
-            }));
+            const mappedResults: SearchResult[] = response.items.map((chunk) => {
+              const fileName = chunk.file_path.split('/').pop() || 'Untitled';
+              const chunkTitle = chunk.heading || 'Untitled Section';
+              return {
+                id: `chunk-${chunk.chunk_id}`,
+                title: `${fileName} > ${chunkTitle}`,
+                path: chunk.file_path,
+                preview: chunk.preview,
+                type: "note" as const,
+                chunkId: chunk.chunk_id,
+              };
+            });
             setResults(mappedResults);
           } else {
             // Use cluster suggestions for semantic mode
@@ -108,7 +114,18 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
   }, [query, searchMode]);
 
   const handleSelectResult = (result: SearchResult) => {
-    if (result.chunkId && onChunkSelect) {
+    if (result.type === "note" && result.chunkId && result.path) {
+      // For keyword search results, load the full file and scroll to the chunk
+      if (onFileChunkSelect) {
+        onFileChunkSelect(result.path, result.chunkId);
+      } else if (onChunkSelect) {
+        // Fallback to single chunk view
+        onChunkSelect(result.chunkId);
+      }
+    } else if (result.type === "cluster" && result.clusterId && onClusterSelect) {
+      // For semantic search results, expand the cluster in the sidebar
+      onClusterSelect(result.clusterId);
+    } else if (result.chunkId && onChunkSelect) {
       onChunkSelect(result.chunkId);
     } else {
       console.log("Selected:", result);
@@ -187,7 +204,11 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
                     `}
                     onClick={() => handleSelectResult(result)}
                   >
-                    <FileText className="w-4 h-4 text-zinc-500 mt-1 flex-shrink-0" />
+                    {result.type === "note" ? (
+                      <File className="w-4 h-4 text-blue-400 mt-1 flex-shrink-0" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-zinc-500 mt-1 flex-shrink-0" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <h3 className="text-sm font-medium text-zinc-200 truncate">{result.title}</h3>
@@ -197,8 +218,13 @@ export function CommandPalette({ isOpen, onClose, onChunkSelect }: CommandPalett
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-500 mb-1">{result.path}</p>
-                      <p className="text-xs text-zinc-600 line-clamp-1">{result.preview}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs text-zinc-500">{result.path}</span>
+                        {result.type === "note" && (
+                          <span className="text-xs text-emerald-500/70">→ View in note</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-zinc-600 line-clamp-2">{result.preview}</p>
                     </div>
                   </div>
                 ))}
